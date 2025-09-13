@@ -1,0 +1,87 @@
+import matplotlib
+import matplotlib.pyplot as plt
+import pandas as pd
+# import pandas_datareader as pdr
+import seaborn as sns
+import urllib.request
+import yfinance as yf
+
+
+YEARS_BACK = 10  # Number of years to crawl
+# List of symbols to crawl from yfinance in addition to S&P 500
+# For more details, cf. https://finance.yahoo.com/quote/[symbol]
+YFINANCE_SYMBOLS = ["^DJI", "META"]
+
+
+def get_append_close_volume_from_yfinance(df, symbol, start_date, end_date):
+    print(f"Crawl data from yfinance for {symbol}...")
+    data = yf.download(symbol, start=start_date, end=end_date, group_by="column", auto_adjust=False, interval="1d", threads=True)
+    if isinstance(data.columns, pd.MultiIndex):
+        data.columns = data.columns.get_level_values(0)
+    # Keep Close & Volume
+    df_new = data.loc[:, ["Close", "Volume"]].copy()
+    df_new = df_new.reset_index()
+    df_new = df_new.rename(columns={
+        "Close": f"{symbol}_CLOSE",
+        "Volume": f"{symbol}_VOLUME",
+        "Date": "DATE"
+    })
+    df_new["DATE"] = pd.to_datetime(df_new["DATE"]).dt.date
+    df_new = df_new.reset_index(drop=True)
+    df_new.index.name = None
+    df_new.columns.name = None
+    if symbol in ["EURUSD=X", "^TNX", "DX-Y.NYB"]:  # In case of some symbols, don't merge the VOLUME as it is empty
+        df_return = df.merge(df_new[["DATE", f"{symbol}_CLOSE"]], on="DATE", how="left")
+    else:
+        df_return = df.merge(df_new[["DATE", f"{symbol}_CLOSE", f"{symbol}_VOLUME"]], on="DATE", how="left")
+    return df_return
+
+def get_append_gprd(df):
+    urllib.request.urlretrieve("https://www.matteoiacoviello.com/gpr_files/data_gpr_daily_recent.xls",
+                           "data/data_gpr_daily_recent.xls")
+    df_gprd = pd.read_excel("data/data_gpr_daily_recent.xls")  # Needs: pip install xlrd
+    df_gprd = df_gprd.rename(columns={"date": "DATE"})
+    df_gprd["DATE"] = pd.to_datetime(df_gprd["DATE"], format="mixed").dt.date
+    df_return = df.merge(df_gprd[["DATE", "GPRD"]], on="DATE", how="left")
+    return df_return
+
+def main():
+    start_date = pd.Timestamp.today() - pd.DateOffset(years=YEARS_BACK)
+    end_date = pd.Timestamp.today()
+    print(f"Start crawling data from {start_date} to {end_date}...")
+
+    # Start with S&P 500 index to build initial df
+    # Reason: get latest official trading day
+    print(f"Crawl data from yfinance for ^SPX...")
+    data = yf.download("^SPX", start=start_date, end=end_date, group_by="column", auto_adjust=False, interval="1d", threads=True)
+    if isinstance(data.columns, pd.MultiIndex):
+        data.columns = data.columns.get_level_values(0)
+    # Only keep Close & Volume as these are relevant columns
+    df = data.loc[:, ["Close", "Volume"]].copy()
+    df = df.reset_index()
+    df = df.rename(columns={
+        "Close": f"^SPX_CLOSE",
+        "Volume": f"^SPX_VOLUME",
+        "Date": "DATE"
+    })
+    df["DATE"] = pd.to_datetime(df["DATE"]).dt.date
+    df = df.reset_index(drop=True)
+    df.index.name = None
+    df.columns.name = None
+
+    # Start appending further stocks data to df
+    for symbol in YFINANCE_SYMBOLS:
+        df = get_append_close_volume_from_yfinance(df, symbol, start_date, end_date)
+    # Append data from geopolitical risk (GPR) index from https://www.matteoiacoviello.com/gpr.htm
+    # The daily data are updated every Monday.
+    # If the first day of the month or week falls on a federal holiday, data updates will take place the next business day.
+    df = get_append_gprd(df)
+    df.info()
+    df = df.ffill()  # Impute NA/NaN values by propagating the last valid observation to next valid.
+    df = df.dropna()  # Drop all rows with NA/NaN values, could e.g. happen when some of the FRED values are not there for the very 1st row
+    df.info()
+    df.describe()
+    df.to_csv(f"data/{pd.to_datetime(end_date).date()}.csv",index=False)
+
+if __name__ == "__main__":
+    main()

@@ -7,7 +7,7 @@ import urllib.request
 import yfinance as yf
 
 
-YEARS_BACK = 10  # Number of years to crawl
+YEARS_BACK = 3  # Number of years to crawl
 # List of symbols to crawl from yfinance in addition to S&P 500
 # For more details, cf. https://finance.yahoo.com/quote/[symbol]
 YFINANCE_SYMBOLS = ["^DJI", "META"]
@@ -47,7 +47,9 @@ def get_append_gprd(df):
 
 def main():
     start_date = pd.Timestamp.today() - pd.DateOffset(years=YEARS_BACK)
+    start_date = pd.to_datetime(start_date).date()
     end_date = pd.Timestamp.today()
+    end_date = pd.to_datetime(end_date).date()
     print(f"Start crawling data from {start_date} to {end_date}...")
 
     # Start with S&P 500 index to build initial df
@@ -69,19 +71,26 @@ def main():
     df.index.name = None
     df.columns.name = None
 
-    # Start appending further stocks data to df
+    # Append further stocks data to df
     for symbol in YFINANCE_SYMBOLS:
         df = get_append_close_volume_from_yfinance(df, symbol, start_date, end_date)
+
     # Append data from geopolitical risk (GPR) index from https://www.matteoiacoviello.com/gpr.htm
     # The daily data are updated every Monday.
     # If the first day of the month or week falls on a federal holiday, data updates will take place the next business day.
     df = get_append_gprd(df)
+    print("\n df before imputing and dropping NaN values:")
     df.info()
     df = df.ffill()  # Impute NA/NaN values by propagating the last valid observation to next valid.
     df = df.dropna()  # Drop all rows with NA/NaN values, could e.g. happen when some of the FRED values are not there for the very 1st row
+    print("\n df after imputing and dropping NaN values:")
     df.info()
-    df.describe()
-    df.to_csv(f"data/{pd.to_datetime(end_date).date()}.csv",index=False)
+    print(f"\n Save data to data/{end_date}.csv ...")
+    df.to_csv(f"data/{end_date}.csv",index=False)
+
+    # Append Fear&Greed data to df
+    # To be implemented, cf. https://medium.com/@polish.greg/fear-and-greed-index-python-scraper-96e71e57dbd0
 
 if __name__ == "__main__":
     main()
+    print("\n Done - exiting now...")

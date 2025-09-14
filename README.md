@@ -8,3 +8,4 @@ The project consists of the following files and should be run one after the othe
 * `1_datacrawler.py`: Crawls data from various sources and saves it, e.g.:
 	* Yahoo Finance using [yfinance](https://github.com/ranaroussi/yfinance)
 	* GPR daily using index data from [Matteo Iacoviello](https://www.matteoiacoviello.com/gpr_files/data_gpr_daily_recent.xls)
+	* Fear & Greed Index using data from CNN API, also cf. [this website](https://edition.cnn.com/markets/fear-and-greed)

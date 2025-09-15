@@ -10,7 +10,7 @@ YEARS_BACK = 5  # Number of years to crawl, maximum about 5 as CNN API (Fear & G
 # List of symbols to crawl from yfinance in addition to S&P 500
 # For more details, cf. https://finance.yahoo.com/quote/[symbol]
 YFINANCE_SYMBOLS = ["^DJI", "META"]
-
+SCALE = False
 
 def get_append_close_volume_from_yfinance(df, symbol, start_date, end_date):
     print(f"Crawl data from yfinance for {symbol}...")
@@ -136,19 +136,20 @@ def main():
     print(f"\n Save original data to data/{end_date}.csv ...")
     df.to_csv(f"data/{end_date}.csv",index=False)
 
-    # Scale data
-    num_cols = [c for c in df.columns
-                if c != "DATE" and pd.api.types.is_numeric_dtype(df[c])]
-    # RobustScaler
-    robustscaled_values = RobustScaler().fit_transform(df[num_cols])
-    df_robustscaled = df.copy()
-    df_robustscaled[num_cols] = robustscaled_values
-    df_robustscaled.to_csv(f"data/{end_date}_robustscaled.csv", index=False)
-    # MinMaxScaler
-    minmaxscaled_values = MinMaxScaler().fit_transform(df[num_cols])
-    df_minmaxscaled = df.copy()
-    df_minmaxscaled[num_cols] = minmaxscaled_values
-    df_minmaxscaled.to_csv(f"data/{end_date}_minmaxscaled.csv", index=False)
+    if SCALE:
+        # Scale data
+        num_cols = [c for c in df.columns
+                    if c != "DATE" and pd.api.types.is_numeric_dtype(df[c])]
+        # RobustScaler
+        robustscaled_values = RobustScaler().fit_transform(df[num_cols])
+        df_robustscaled = df.copy()
+        df_robustscaled[num_cols] = robustscaled_values
+        df_robustscaled.to_csv(f"data/{end_date}_robustscaled.csv", index=False)
+        # MinMaxScaler
+        minmaxscaled_values = MinMaxScaler().fit_transform(df[num_cols])
+        df_minmaxscaled = df.copy()
+        df_minmaxscaled[num_cols] = minmaxscaled_values
+        df_minmaxscaled.to_csv(f"data/{end_date}_minmaxscaled.csv", index=False)
 
 
 if __name__ == "__main__":

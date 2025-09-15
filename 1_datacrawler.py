@@ -1,15 +1,9 @@
-import matplotlib
-import matplotlib.pyplot as plt
 import pandas as pd
-# import pandas_datareader as pdr
-import seaborn as sns
 import yfinance as yf
-import requests, csv, json, urllib
-import time
+import requests, urllib
 
+from sklearn.preprocessing import RobustScaler, MinMaxScaler
 from fake_useragent import UserAgent
-from datetime import datetime
-
 
 
 YEARS_BACK = 5  # Number of years to crawl, maximum about 5 as CNN API (Fear & Greed Index) does not go back further
@@ -51,9 +45,9 @@ def get_append_gprd(df):
     return df_return
 
 def get_append_fearandgreed(df, start_date):
-    # Crawls Fear and Greed Index from CNN API
+    # Crawls Fear & Greed Index from CNN API
     # Also cf. https://edition.cnn.com/markets/fear-and-greed
-    # Inspired by https://medium.com/@polish.greg/fear-and-greed-index-python-scraper-96e71e57dbd0
+    # Partially inspired by https://medium.com/@polish.greg/fear-and-greed-index-python-scraper-96e71e57dbd0
     fearandgreed_base_url = "https://production.dataviz.cnn.io/index/fearandgreed/graphdata/"
     ua = UserAgent()
     headers = {
@@ -68,6 +62,7 @@ def get_append_fearandgreed(df, start_date):
             "y": "FEARANDGREED"
         })
         df_fearandgreed["DATE"] = pd.to_datetime(df_fearandgreed["DATE"].astype(int), unit="ms", utc=True).dt.date
+        df_fearandgreed["FEARANDGREED"] = pd.to_numeric(df_fearandgreed["FEARANDGREED"]).astype(float)
         df_return = df.merge(df_fearandgreed[["DATE", "FEARANDGREED"]], on="DATE", how="left")
         return df_return
     elif r.status_code == 500:
@@ -124,9 +119,36 @@ def main():
     df = df.dropna()  # Drop all rows with NA/NaN values, could e.g. happen when some of the FRED values are not there for the very 1st row
     print("\n df after imputing and dropping NaN values:")
     df.info()
-    # Optional: scale data - not done yet - maybe todo
-    print(f"\n Save data to data/{end_date}.csv ...")
+
+    # Add 5, 21, 50 and 200 day moving average to df (per column)
+    # Choose only numeric columns and exclude the DATE column
+    num_cols = [c for c in df.columns
+                if c != "DATE" and pd.api.types.is_numeric_dtype(df[c])]
+    for col in num_cols:
+        df[f"{col}_rollingavg5"] = df[col].rolling(window=5).mean()
+        df[f"{col}_rollingavg21"] = df[col].rolling(window=21).mean()
+        df[f"{col}_rollingavg50"] = df[col].rolling(window=50).mean()
+        df[f"{col}_rollingavg200"] = df[col].rolling(window=200).mean()
+
+    df = df.dropna()  # Again drop all rows with NA/NaN values, happens due to moving average
+
+    # Save original and scaled versions of data
+    print(f"\n Save original data to data/{end_date}.csv ...")
     df.to_csv(f"data/{end_date}.csv",index=False)
+
+    # Scale data
+    num_cols = [c for c in df.columns
+                if c != "DATE" and pd.api.types.is_numeric_dtype(df[c])]
+    # RobustScaler
+    robustscaled_values = RobustScaler().fit_transform(df[num_cols])
+    df_robustscaled = df.copy()
+    df_robustscaled[num_cols] = robustscaled_values
+    df_robustscaled.to_csv(f"data/{end_date}_robustscaled.csv", index=False)
+    # MinMaxScaler
+    minmaxscaled_values = MinMaxScaler().fit_transform(df[num_cols])
+    df_minmaxscaled = df.copy()
+    df_minmaxscaled[num_cols] = minmaxscaled_values
+    df_minmaxscaled.to_csv(f"data/{end_date}_minmaxscaled.csv", index=False)
 
 
 if __name__ == "__main__":

@@ -10,6 +10,7 @@ YEARS_BACK = 5  # Number of years to crawl, maximum about 5 as CNN API (Fear & G
 # List of symbols to crawl from yfinance in addition to S&P 500
 # For more details, cf. https://finance.yahoo.com/quote/[symbol]
 YFINANCE_SYMBOLS = ["^DJI", "META"]
+ROLLINGAVG = False
 SCALE = False
 
 def get_append_close_volume_from_yfinance(df, symbol, start_date, end_date):
@@ -124,11 +125,12 @@ def main():
     # Choose only numeric columns and exclude the DATE column
     num_cols = [c for c in df.columns
                 if c != "DATE" and pd.api.types.is_numeric_dtype(df[c])]
-    for col in num_cols:
-        df[f"{col}_rollingavg5"] = df[col].rolling(window=5).mean()
-        df[f"{col}_rollingavg21"] = df[col].rolling(window=21).mean()
-        df[f"{col}_rollingavg50"] = df[col].rolling(window=50).mean()
-        df[f"{col}_rollingavg200"] = df[col].rolling(window=200).mean()
+    if ROLLINGAVG:
+        for col in num_cols:
+            df[f"{col}_rollingavg5"] = df[col].rolling(window=5).mean()
+            df[f"{col}_rollingavg21"] = df[col].rolling(window=21).mean()
+            df[f"{col}_rollingavg50"] = df[col].rolling(window=50).mean()
+            df[f"{col}_rollingavg200"] = df[col].rolling(window=200).mean()
 
     df = df.dropna()  # Again drop all rows with NA/NaN values, happens due to moving average
 

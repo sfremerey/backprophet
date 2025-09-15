@@ -3,11 +3,15 @@ import os
 import torch
 import pandas as pd
 import numpy as np
-
+torch.manual_seed(42)
+np.random.seed(42)
 from sklearn.model_selection import train_test_split
 from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
 
+
+
+TENSORBOARD = True  # Use tensorboard for logging
 
 # Inspired by https://medium.com/thedeephub/rnns-in-action-predicting-stock-prices-with-recurrent-neural-networks-9155a33c4c3b
 def create_dataset_multivariate(df, target_col, look_back=60):
@@ -55,21 +59,24 @@ def main():
     n_features = X_train.shape[2]
     input_dim = look_back * n_features
 
-    # Convert to torch Tensors
-    X_train = torch.tensor(X_train, dtype=torch.float32)
-    X_test = torch.tensor(X_test, dtype=torch.float32)
-    Y_train = torch.tensor(Y_train, dtype=torch.long)
-    Y_test = torch.tensor(Y_test, dtype=torch.long)
+    # Reshape X to 2D tensor for MLP
+    X_train = torch.tensor(X_train, dtype=torch.float32).reshape(len(X_train), input_dim)
+    X_test = torch.tensor(X_test, dtype=torch.float32).reshape(len(X_test), input_dim)
 
+    # Regression targets need to be float and (same, 1)
+    Y_train = torch.tensor(Y_train, dtype=torch.float32).reshape(-1, 1)
+    Y_test = torch.tensor(Y_test, dtype=torch.float32).reshape(-1, 1)
+
+    # Timestamp for Tensorboard
+    now = datetime.datetime.now()
+    date_time = now.strftime("%Y%m%d-%H%M%S")
+
+    # Hyperparameters
     learning_rate = 0.001
     dropout_rate = 0.1
     training_epochs = 200
     batch_size = 256
     hidden_size = 128
-
-    # Time stamp for TB run
-    now = datetime.datetime.now()
-    date_time = end_date.strftime("%Y%m%d-%H%M%S")
 
     # Model1
     model = torch.nn.Sequential(
@@ -80,6 +87,7 @@ def main():
     ).to(device)
 
     criterion = torch.nn.MSELoss()
+    mae_loss = torch.nn.L1Loss(reduction="mean")  # MAE
     optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
 
     # For TensorBoard
@@ -94,37 +102,30 @@ def main():
         # Some environments may not support add_graph; safe to continue
         print(f"add_graph skipped: {e}")
 
-    global_step = 0
-
-    def evaluate(epoch: int, log_hist: bool = False):
+    def evaluate(epoch: int):
         """Evaluate on the full test set (10k) and of train for speed; log to TB."""
         model.eval()
-        with torch.no_grad():
-            # Test
-            xtrain = X_test.to(device)
-            ytrain = Y_test.to(device)
-            logits_test = model(xtrain)
-            loss_test = criterion(logits_test, ytrain).item()
-            acc_test = (logits_test.argmax(1) == ytrain).float().mean().item()
+        with (torch.no_grad()):
+            xtest = X_test.to(device)
+            ytest = Y_test.to(device)
+            y_pred_test = model(xtest)
+            loss_test = criterion(y_pred_test, ytest).item()
+            mae_test = mae_loss(y_pred_test, ytest).item()
 
-            # Train
             xtrain = X_train.to(device)
             ytrain = Y_train.to(device)
-            logits_train = model(xtrain)
-            loss_train = criterion(logits_train, ytrain).item()
-            acc_train = (logits_train.argmax(1) == ytrain).float().mean().item()
-        if tensorboard:
-            writer.add_scalar("Accuracy/X_test", acc_test, epoch)
-            writer.add_scalar("Accuracy/X_train", acc_train, epoch)
+            y_pred_train = model(xtrain)
+            loss_train = criterion(y_pred_train, ytrain).item()
+            mae_train = mae_loss(y_pred_train, ytrain).item()
+        if TENSORBOARD:
             writer.add_scalar("Loss/X_test", loss_test, epoch)
             writer.add_scalar("Loss/X_train", loss_train, epoch)
+            writer.add_scalar("Metric/MAE/X_test", mae_test, epoch)
+            writer.add_scalar("Metric/MAE/X_train", mae_train, epoch)
 
-            if log_hist:
-                for name, param in model.named_parameters():
-                    writer.add_histogram(f"params/{name}", param, epoch)
-
-        print(f"[E{epoch:03d}] acc_test={acc_test:.4f} loss_test={loss_test:.4f} | "
-              f"acc_train≈{acc_train:.4f} loss_train≈{loss_train:.4f}")
+        print(f"[E{epoch:03d}] "
+              f"loss_test≈{loss_test:.4f} | loss_train≈{loss_train:.4f}"
+              f"mae_test≈{mae_test:.4f} | mae_train≈{mae_train:.4f}")
 
         model.train()
 
@@ -151,25 +152,20 @@ def main():
 
             running_loss += loss.item()
             n_batches += 1
-            global_step += 1
-
-            # Lightweight per-step logging: only a scalar (kept cheap)
-            if global_step % 50 == 0 and tensorboard:
-                writer.add_scalar("Loss/train_step", loss.item(), global_step)
 
         avg_loss = running_loss / max(1, n_batches)
-        if tensorboard:
+        if TENSORBOARD:
             writer.add_scalar("Loss/train_epoch_avg", avg_loss, epoch)
 
         # print(f"Epoch {epoch + 1:03d}/{training_epochs} | avg_loss={avg_loss:.4f} | {epoch_time:.2f}s")
 
-        # Evaluate every 2 epochs; add histograms every 10 epochs
+        # Evaluate every 2 epochs
         if (epoch + 1) % 2 == 0:
-            evaluate(epoch + 1, log_hist=((epoch + 1) % 10 == 0))
+            evaluate(epoch + 1)
 
     # Final eval + close TB
-    evaluate(training_epochs, log_hist=True)
-    if tensorboard:
+    evaluate(training_epochs)
+    if TENSORBOARD:
         writer.close()
 
     # Save model

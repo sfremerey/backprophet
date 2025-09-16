@@ -5,6 +5,7 @@ import pandas as pd
 import numpy as np
 torch.manual_seed(42)
 np.random.seed(42)
+from sklearn.preprocessing import MinMaxScaler
 from sklearn.model_selection import train_test_split
 from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
@@ -15,7 +16,8 @@ TENSORBOARD = True  # Use tensorboard for logging
 
 # Inspired by https://medium.com/thedeephub/rnns-in-action-predicting-stock-prices-with-recurrent-neural-networks-9155a33c4c3b
 def create_dataset_multivariate(df, target_col, look_back=60):
-    X, Y = [], []
+    X = []
+    Y = []
     feature_cols = [c for c in df.columns if c not in ["DATE", target_col]]
 
     for i in range(len(df) - look_back - 1):
@@ -23,8 +25,8 @@ def create_dataset_multivariate(df, target_col, look_back=60):
         features = df[feature_cols].iloc[i:(i + look_back)].values
         X.append(features)
 
-        # Target is e.g. META_CLOSE at i+look_back+1
-        Y.append(df[target_col].iloc[i + look_back + 1])
+        # Target is e.g. META_CLOSE at i + look_back
+        Y.append(df[target_col].iloc[i + look_back])
 
     X = np.array(X)  # Shape: (samples, look_back, n_features)
     Y = np.array(Y)  # Shape: (samples,)
@@ -49,11 +51,19 @@ def main():
     end_date = pd.Timestamp.today()
     end_date = pd.to_datetime(end_date).date()
     df = pd.read_csv(f"data/{end_date}.csv")
+    df.set_index("DATE", inplace=True)  # Set index of df to "DATE" column so that scaler doesn't scale date
 
-    X, y = create_dataset_multivariate(df, target_col="META_CLOSE", look_back=60)
+    scaler = MinMaxScaler()  # Other possible scalers would be: StandardScaler, RobustScaler
+    scaled_values = scaler.fit_transform(df)
+    df_scaled = pd.DataFrame(scaled_values, columns=df.columns, index=df.index)
+
+    X, y = create_dataset_multivariate(df_scaled, target_col="META_CLOSE", look_back=60)
+    # X, y = create_sequence(df_scaled, window_size=60)
     print("X shape:", X.shape)  # (num_samples, 60, num_features)
     print("y shape:", y.shape)  # (num_samples,)
-    X_train, X_test, Y_train, Y_test = train_test_split(X, y, test_size=0.2, shuffle=False)
+    # Shuffle=False important for time series data
+    # Cf. e.g. https://stackoverflow.com/questions/74025273/is-train-test-splitshuffle-false-appropriate-for-time-series
+    X_train, X_test, Y_train, Y_test = train_test_split(X, y, test_size=0.2, random_state=42, shuffle=False)
 
     look_back = X_train.shape[1]
     n_features = X_train.shape[2]

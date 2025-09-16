@@ -133,6 +133,7 @@ def main():
             df[f"{col}_rollingavg200"] = df[col].rolling(window=200).mean()
 
     df = df.dropna()  # Again drop all rows with NA/NaN values, happens due to moving average
+    df.sort_values(by="DATE", ascending=True, inplace=True)
 
     # Save original and scaled versions of data
     print(f"\n Save original data to data/{end_date}.csv ...")

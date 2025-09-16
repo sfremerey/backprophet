@@ -155,8 +155,8 @@ def main():
     learning_rate = 0.001
     dropout_rate = 0.1
     training_epochs = 200
-    batch_size = 256
-    hidden_size = 128
+    batch_size = 128
+    hidden_size = 256
 
     model = torch.nn.Sequential(
         torch.nn.Linear(input_dim, hidden_size, bias=True),

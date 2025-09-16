@@ -1,6 +1,7 @@
 import datetime
 import os
 import torch
+import torch.nn as nn
 import pandas as pd
 import numpy as np
 import matplotlib.pyplot as plt
@@ -123,6 +124,9 @@ def main():
     end_date = pd.to_datetime(end_date).date()
     df = pd.read_csv(f"data/{end_date}.csv")
     df.set_index("DATE", inplace=True)  # Set index of df to "DATE" column so that scaler doesn't scale date
+    # Dropping of columns is only for testing purposes
+    # The more rows dropped, the worse the results on the train set, but the better the results on the test set
+    # df.drop(columns=["FEARANDGREED", "^SPX_CLOSE", "^SPX_VOLUME", "^DJI_CLOSE", "^DJI_VOLUME", "GPRD", "META_VOLUME"], inplace=True)
 
     scaler = MinMaxScaler()  # Other possible scalers would be: StandardScaler, RobustScaler
     scaled_values = scaler.fit_transform(df)
@@ -158,15 +162,15 @@ def main():
     batch_size = 128
     hidden_size = 256
 
-    model = torch.nn.Sequential(
-        torch.nn.Linear(input_dim, hidden_size, bias=True),
-        torch.nn.LeakyReLU(),
-        torch.nn.Dropout(p=dropout_rate),
-        torch.nn.Linear(hidden_size, 1, bias=True),
+    model = nn.Sequential(
+        nn.Linear(input_dim, hidden_size, bias=True),
+        nn.LeakyReLU(),
+        nn.Dropout(p=dropout_rate),
+        nn.Linear(hidden_size, 1, bias=True),
     ).to(device)
 
-    criterion = torch.nn.MSELoss()
-    mae_loss = torch.nn.L1Loss(reduction="mean")  # MAE
+    criterion = nn.MSELoss()
+    mae_loss = nn.L1Loss(reduction="mean")  # MAE
     optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
 
     # For TensorBoard
@@ -264,3 +268,33 @@ def main():
 
 if __name__ == "__main__":
     main()
+
+# Some results for comparison - for the "interested reader" ;-)
+
+# data including everything
+# [Train] MAE=4.8579, RMSE=6.4967
+# [ Test ] MAE=35.9516, RMSE=45.8093
+
+# data not including FEARANDGREED, ^SPX_CLOSE, ^SPX_VOLUME, ^DJI_CLOSE, ^DJI_VOLUME, GPRD, META_VOLUME
+# [Train] MAE=6.3206, RMSE=9.1589
+# [ Test ] MAE=13.1977, RMSE=18.2137
+
+# data not including FEARANDGREED, ^SPX_CLOSE, ^SPX_VOLUME, ^DJI_CLOSE, ^DJI_VOLUME, GPRD
+# [Train] MAE=5.1914, RMSE=7.3961
+# [ Test ] MAE=15.9410, RMSE=21.2048
+
+# data not including FEARANDGREED, ^SPX_CLOSE, ^SPX_VOLUME, ^DJI_CLOSE, ^DJI_VOLUME
+# [Train] MAE=4.9931, RMSE=6.7476
+# [ Test ] MAE=17.5549, RMSE=22.3178
+
+# data not including FEARANDGREED, ^SPX_CLOSE, ^SPX_VOLUME
+# [Train] MAE=4.7165, RMSE=6.2816
+# [ Test ] MAE=29.9856, RMSE=39.5723
+
+# data not including FEARANDGREED
+# [Train] MAE=10.3572, RMSE=12.5853
+# [ Test ] MAE=31.2990, RMSE=38.9286
+
+# data not including FEARANDGREED, GPRD
+# [Train] MAE=5.1702, RMSE=7.1684
+# [ Test ] MAE=37.7971, RMSE=49.5859

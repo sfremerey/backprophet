@@ -23,8 +23,9 @@ class GRUModel(nn.Module):
         self.hidden_size = hidden_size
         self.num_layers = num_layers
         self.gru = nn.GRU(input_size, hidden_size, num_layers, batch_first=True)
-        self.gru2 = nn.GRU(input_size, hidden_size, num_layers, batch_first=True)
+        self.gru2 = nn.GRU(hidden_size, hidden_size, num_layers, batch_first=True)
         self.fc = nn.Linear(hidden_size, hidden_size)
+        self.act = nn.LeakyReLU(0.01)
         self.fc2 = nn.Linear(hidden_size, num_classes)
 
     def forward(self, x):
@@ -32,7 +33,7 @@ class GRUModel(nn.Module):
         out, _ = self.gru(x, h0)
         out, _ = self.gru2(out, h0)
         out = self.fc(out[:, -1, :])
-        out = nn.ReLU()(out)
+        out = self.act(out)
         out = self.fc2(out)
         return out
 

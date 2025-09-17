@@ -4,121 +4,35 @@ import torch
 import torch.nn as nn
 import pandas as pd
 import numpy as np
-import matplotlib.pyplot as plt
+import backprophet_utils as bpu
+
 torch.manual_seed(42)
 np.random.seed(42)
+
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.model_selection import train_test_split
 from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
 
-# LSTM Modell
-class LSTMModel(nn.Module):
-	def __init__(self, input_size, hidden_size, num_layers, num_classes):
-		super(LSTMModel, self).__init__()
-		self.hidden_size = hidden_size
-		self.num_layers = num_layers
-		self.lstm = nn.LSTM(input_size, hidden_size, num_layers, batch_first=True)
-		self.fc = nn.Linear(hidden_size, num_classes)
-
-	def forward(self, x):
-		h0 = torch.zeros(self.num_layers, x.size(0), self.hidden_size).to(x.device)
-		c0 = torch.zeros(self.num_layers, x.size(0), self.hidden_size).to(x.device)
-
-		out, _ = self.lstm(x, (h0, c0))
-		out = self.fc(out[:, -1, :])
-		return out
-
-
 TENSORBOARD = True  # Use tensorboard for logging
 
-# Inspired by https://medium.com/thedeephub/rnns-in-action-predicting-stock-prices-with-recurrent-neural-networks-9155a33c4c3b
-def create_dataset_multivariate(df, target_col, look_back=60):
-    X = []
-    Y = []
 
-    feature_cols = [c for c in df.columns if c != "DATE"]  # DATE anyway is index
-    for i in range(len(df) - look_back):
-        X.append(df[feature_cols].iloc[i:i+look_back].values)      # (look_back, n_feat)
-        Y.append(df[target_col].iloc[i + look_back])               # value for next day
-    return np.array(X), np.array(Y)
+# LSTM Modell
+class LSTMModel(nn.Module):
+    def __init__(self, input_size, hidden_size, num_layers, num_classes):
+        super(LSTMModel, self).__init__()
+        self.hidden_size = hidden_size
+        self.num_layers = num_layers
+        self.lstm = nn.LSTM(input_size, hidden_size, num_layers, batch_first=True)
+        self.fc = nn.Linear(hidden_size, num_classes)
 
-# This plotting function is written by ChatGPT 5
-def plot_preds_time_and_xy(df, target_col, look_back,
-                           X_train, Y_train, X_test, Y_test,
-                           model, scY=None, title_prefix="META"):
-    """
-    df: original DataFrame with DATE as index (chronologically sorted)
-    target_col: e.g. "META_CLOSE"
-    look_back: int, your window size
-    X_train/X_test: tensors of shape (N, input_dim)
-    Y_train/Y_test: tensors of shape (N, 1)  -- scaled if you used scY
-    scY: sklearn scaler fitted on df[[target_col]]  (or None if not scaled)
-    """
-    model.eval()
-    with torch.no_grad():
-        yhat_train_s = model(X_train).detach().cpu().numpy()   # (Ntr,1)
-        yhat_test_s  = model(X_test ).detach().cpu().numpy()   # (Nte,1)
+    def forward(self, x):
+        h0 = torch.zeros(self.num_layers, x.size(0), self.hidden_size).to(x.device)
+        c0 = torch.zeros(self.num_layers, x.size(0), self.hidden_size).to(x.device)
 
-    ytrain_s = Y_train.detach().cpu().numpy()                  # (Ntr,1)
-    ytest_s  = Y_test.detach().cpu().numpy()                   # (Nte,1)
-
-    # Inverse-transform to original units (USD) if scaler provided
-    if scY is not None:
-        yhat_train = scY.inverse_transform(yhat_train_s).ravel()
-        yhat_test  = scY.inverse_transform(yhat_test_s ).ravel()
-        ytrain     = scY.inverse_transform(ytrain_s    ).ravel()
-        ytest      = scY.inverse_transform(ytest_s     ).ravel()
-    else:
-        yhat_train, yhat_test = yhat_train_s.ravel(), yhat_test_s.ravel()
-        ytrain,     ytest     = ytrain_s.ravel(),     ytest_s.ravel()
-
-    # Build date index aligned to targets (first target is at index look_back)
-    y_dates = df.index[look_back:]                 # length == len(ytrain)+len(ytest)
-    n_tr = len(ytrain)
-    dates_train = y_dates[:n_tr]
-    dates_test  = y_dates[n_tr:]
-
-    # Metrics
-    def mae(a,b): return float(np.mean(np.abs(a-b)))
-    def rmse(a,b): return float(np.sqrt(np.mean((a-b)**2)))
-    mae_tr, rmse_tr = mae(ytrain, yhat_train), rmse(ytrain, yhat_train)
-    mae_te, rmse_te = mae(ytest,  yhat_test ), rmse(ytest,  yhat_test )
-
-    print(f"[Train] MAE={mae_tr:.4f}, RMSE={rmse_tr:.4f}")
-    print(f"[ Test ] MAE={mae_te:.4f}, RMSE={rmse_te:.4f}")
-
-    # ---------- Time-series overlay ----------
-    plt.figure(figsize=(12,5))
-    plt.plot(dates_train, ytrain,     label="Train Actual")
-    plt.plot(dates_train, yhat_train, label="Train Pred")
-    plt.plot(dates_test,  ytest,      label="Test Actual")
-    plt.plot(dates_test,  yhat_test,  label="Test Pred")
-    plt.title(f"{title_prefix}: {target_col} — Actual vs Predicted")
-    plt.xlabel("Date"); plt.ylabel(target_col)
-    plt.legend(); plt.tight_layout()
-    plt.show()
-
-    # ---------- Scatter x vs y (predicted vs actual) ----------
-    fig, axes = plt.subplots(1, 2, figsize=(12,5))
-    # Train
-    ax = axes[0]
-    ax.scatter(ytrain, yhat_train, s=8, alpha=0.6)
-    mn, mx = np.min(ytrain), np.max(ytrain)
-    ax.plot([mn, mx], [mn, mx])
-    ax.set_title(f"Train: Pred vs Actual\nMAE={mae_tr:.3f}, RMSE={rmse_tr:.3f}")
-    ax.set_xlabel("Actual"); ax.set_ylabel("Predicted")
-    # Test
-    ax = axes[1]
-    ax.scatter(ytest, yhat_test, s=8, alpha=0.6)
-    mn, mx = np.min(ytest), np.max(ytest)
-    ax.plot([mn, mx], [mn, mx])
-    ax.set_title(f"Test: Pred vs Actual\nMAE={mae_te:.3f}, RMSE={rmse_te:.3f}")
-    ax.set_xlabel("Actual"); ax.set_ylabel("Predicted")
-
-    plt.tight_layout()
-    plt.show()
-
+        out, _ = self.lstm(x, (h0, c0))
+        out = self.fc(out[:, -1, :])
+        return out
 
 def main():
     # Set torch device
@@ -145,7 +59,7 @@ def main():
     scaled_values = scaler.fit_transform(df)
     df_scaled = pd.DataFrame(scaled_values, columns=df.columns, index=df.index)
 
-    X, y = create_dataset_multivariate(df_scaled, target_col="META_CLOSE", look_back=60)
+    X, y = bpu.create_dataset_multivariate(df_scaled, target_col="META_CLOSE", look_back=60)
     print("X shape:", X.shape)  # (num_samples, 60, num_features)
     print("y shape:", y.shape)  # (num_samples,)
     # Shuffle=False important for time series data
@@ -258,21 +172,19 @@ def main():
     # Final eval + close TB
     evaluate(training_epochs)
     scaler_y = MinMaxScaler().fit(df[["META_CLOSE"]])
-    plot_preds_time_and_xy(
+    bpu.plot_preds_time_and_xy(
         df=df, target_col="META_CLOSE", look_back=look_back,
         X_train=X_train, Y_train=Y_train,
         X_test=X_test, Y_test=Y_test,
-        model=model, scY=scaler_y, title_prefix="META"
+        model=model, save_name=f"{end_date}backprophet_lstm",
+        scY=scaler_y, title_prefix="META"
     )
     if TENSORBOARD:
         writer.close()
 
-
-
     # Save model
-    # Path("models").mkdir(parents=True, exist_ok=True)
-    # torch.save(model,
-    #            f"models/gold_m1-ep{training_epochs}-lr{learning_rate}-dr{dropout_rate}-bat{batch_size}-hid{hidden_size}.pth")
+    Path("models").mkdir(parents=True, exist_ok=True)
+    torch.save(model, "models/backprophet_lstm.pth")
 
 
 if __name__ == "__main__":

@@ -18,4 +18,7 @@ Then you can also assert that the most recent data is used, ideally from yesterd
 	* Fear & Greed Index using data from CNN API, also cf. [this website](https://edition.cnn.com/markets/fear-and-greed)
 * `2_simple_mlp.py`: Trains and evaluates a simple MLP regression model
 * `3_lstm.py`: Trains and evaluates a LSTM model
-* ...
+* `4_gru.py`: Trains and evaluates a GRU model
+* `5_rnn.py`: Trains and evaluates a RNN model
+* `6_cnn.py`: Trains and evaluates a CNN model
+* `7_ensemble.py`: Evaluates using an ensemble model, hence a combination of the most promising pre-trained models

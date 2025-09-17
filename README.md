@@ -3,8 +3,9 @@ This is backprophet - a tool for stocks prediction.
 To assure that the most recent data is crawled, each Python script should be run one after each other in the correct order.
 The order is defined by the preceding number of each script.
 
-## Install packages
-At first, it is recommended to install the needed Python packages via `pip install`.
+## Python requirements
+This software is tested under Windows 11 and Python 3.13.5
+At first, it is recommended to install the required Python packages via `pip install`.
 You can also call `pip install requirements.txt`
 
 ## Structure

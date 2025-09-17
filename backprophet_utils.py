@@ -105,7 +105,7 @@ def plot_preds_time_and_xy(df, target_col, look_back,
         ax.xaxis.set_major_locator(MaxNLocator(nbins=8, prune="both"))
 
     plt.tight_layout()
-    plt.show()
+    # plt.show()
     fig.savefig(f"plots/{save_name}_pricetrend.pdf")
 
     # ---------- Scatter x vs y (predicted vs actual) ----------
@@ -126,5 +126,5 @@ def plot_preds_time_and_xy(df, target_col, look_back,
     ax.set_xlabel("Actual"); ax.set_ylabel("Predicted")
 
     plt.tight_layout()
-    plt.show()
+    # plt.show()
     fig.savefig(f"plots/{save_name}_scatter.pdf")

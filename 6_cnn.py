@@ -185,7 +185,7 @@ def main():
 
     # Save model
     Path("models").mkdir(parents=True, exist_ok=True)
-    torch.save(model, "models/backprophet_cnn.pth")
+    torch.save(model, f"models/{end_date}_backprophet_cnn.pth")
 
 
 if __name__ == "__main__":

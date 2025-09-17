@@ -23,7 +23,7 @@ class GRUModel(nn.Module):
         self.hidden_size = hidden_size
         self.num_layers = num_layers
         self.gru = nn.GRU(input_size, hidden_size, num_layers, batch_first=True)
-        self.gru2 = nn.GRU(hidden_size, hidden_size, num_layers, batch_first=True)
+        # self.gru2 = nn.GRU(hidden_size, hidden_size, num_layers, batch_first=True)
         self.fc = nn.Linear(hidden_size, hidden_size)
         self.act = nn.LeakyReLU(0.01)
         self.fc2 = nn.Linear(hidden_size, num_classes)
@@ -31,7 +31,7 @@ class GRUModel(nn.Module):
     def forward(self, x):
         h0 = torch.zeros(self.num_layers, x.size(0), self.hidden_size)
         out, _ = self.gru(x, h0)
-        out, _ = self.gru2(out, h0)
+        # out, _ = self.gru2(out, h0)
         out = self.fc(out[:, -1, :])
         out = self.act(out)
         out = self.fc2(out)
@@ -91,7 +91,7 @@ def main():
 
     # Hyperparameters
     learning_rate = 0.001
-    training_epochs = 200
+    training_epochs = 300
     batch_size = 128
     hidden_size = 256
     num_layers = 3
@@ -190,7 +190,7 @@ def main():
 
     # Save model
     Path("models").mkdir(parents=True, exist_ok=True)
-    torch.save(model, f"models/gru_{num_layers}layers.pth")
+    torch.save(model, f"models/{end_date}_gru_{num_layers}layers.pth")
 
 if __name__ == "__main__":
     main()

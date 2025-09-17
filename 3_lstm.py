@@ -184,7 +184,7 @@ def main():
 
     # Save model
     Path("models").mkdir(parents=True, exist_ok=True)
-    torch.save(model, f"models/lstm_{num_layers}layers.pth")
+    torch.save(model, f"models/{end_date}_lstm_{num_layers}layers.pth")
 
 
 if __name__ == "__main__":

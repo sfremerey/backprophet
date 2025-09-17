@@ -171,7 +171,7 @@ def main():
 
     # Save model
     Path("models").mkdir(parents=True, exist_ok=True)
-    torch.save(model, "models/simple_mlp.pth")
+    torch.save(model, f"models/{end_date}_simple_mlp.pth")
 
 
 if __name__ == "__main__":

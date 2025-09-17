@@ -3,6 +3,10 @@ This is backprophet - a tool for stocks prediction.
 To assure that the most recent data is crawled, each Python script should be run one after each other in the correct order.
 The order is defined by the preceding number of each script.
 
+## Install packages
+At first, it is recommended to install the needed Python packages via `pip install`.
+You can also call `pip install requirements.txt`
+
 ## Structure
 The project consists of the following files and should be run one after the other.
 Then you can also assert that the most recent data is used, ideally from yesterday's close.

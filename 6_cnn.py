@@ -31,7 +31,7 @@ class CNNModel(nn.Module):
     def forward(self, x):
         x = x.unsqueeze(1)
         x = F.leaky_relu(self.conv1(x))
-        x = F.leaky_relu(self.conv2(x))
+        # x = F.leaky_relu(self.conv2(x))
         x = self.pool(x).squeeze(-1).squeeze(-1)
         x = self.fc1(x)
         return x

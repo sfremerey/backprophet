@@ -6,7 +6,7 @@ The order is defined by the preceding number of each script.
 ## Python requirements
 This software is tested under Windows 11 and Python 3.13.5
 At first, it is recommended to install the required Python packages via `pip install`.
-You can also call `pip install requirements.txt`
+You can also call `pip install -r requirements.txt`
 
 ## Structure
 The project consists of the following files and should be run one after the other.

@@ -86,7 +86,7 @@ def main():
 
     # Hyperparameters
     learning_rate = 0.001
-    training_epochs = 200
+    training_epochs = 300
     batch_size = 128
     hidden_size = 256
     kernel_size = 2

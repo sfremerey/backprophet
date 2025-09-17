@@ -89,7 +89,7 @@ def main():
     # Hyperparameters
     learning_rate = 0.001
     dropout_rate = 0.1
-    training_epochs = 200
+    training_epochs = 300
     batch_size = 128
     hidden_size = 256
     num_layers = 4

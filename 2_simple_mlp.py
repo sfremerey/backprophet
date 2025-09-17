@@ -88,7 +88,7 @@ def main():
 
     # For TensorBoard
     writer = SummaryWriter(
-        f"runs/simplelinear_{date_time}_m1-ep{training_epochs}-lr{learning_rate}-dr{dropout_rate}-bat{batch_size}-hid{hidden_size}"
+        f"runs/simplemlp_{date_time}"
     )
 
     # Add a small graph once (dummy input to avoid pushing full test set)
@@ -163,7 +163,7 @@ def main():
         df=df, target_col="META_CLOSE", look_back=look_back,
         X_train=X_train, Y_train=Y_train,
         X_test=X_test, Y_test=Y_test,
-        model=model, save_name=f"{end_date}_backprophet_simple_mlp",
+        model=model, save_name=f"{end_date}_simple_mlp",
         scY=scaler_y, title_prefix="META"
     )
     if TENSORBOARD:
@@ -171,7 +171,7 @@ def main():
 
     # Save model
     Path("models").mkdir(parents=True, exist_ok=True)
-    torch.save(model, "models/backprophet_simple_mlp.pth")
+    torch.save(model, "models/simple_mlp.pth")
 
 
 if __name__ == "__main__":

@@ -9,6 +9,7 @@ import backprophet_utils as bpu
 torch.manual_seed(42)
 np.random.seed(42)
 
+from pathlib import Path
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.model_selection import train_test_split
 from torch.utils.tensorboard import SummaryWriter
@@ -17,7 +18,6 @@ from tqdm import tqdm
 TENSORBOARD = True  # Use tensorboard for logging
 
 
-# LSTM Modell
 class LSTMModel(nn.Module):
     def __init__(self, input_size, hidden_size, num_layers, num_classes):
         super(LSTMModel, self).__init__()
@@ -88,7 +88,7 @@ def main():
     training_epochs = 200
     batch_size = 128
     hidden_size = 256
-    num_layers = 3
+    num_layers = 5  # 3 layers worse, 4 optimum
 
     model = LSTMModel(n_features, hidden_size, num_layers, 1).to(device)
 
@@ -98,7 +98,7 @@ def main():
 
     # For TensorBoard
     writer = SummaryWriter(
-        f"runs/simplelinear_{date_time}_m1-ep{training_epochs}-lr{learning_rate}-dr{dropout_rate}-bat{batch_size}-hid{hidden_size}"
+        f"runs/lstm_{date_time}_{num_layers}layers"
     )
 
     # Add a small graph once (dummy input to avoid pushing full test set)
@@ -176,7 +176,7 @@ def main():
         df=df, target_col="META_CLOSE", look_back=look_back,
         X_train=X_train, Y_train=Y_train,
         X_test=X_test, Y_test=Y_test,
-        model=model, save_name=f"{end_date}backprophet_lstm",
+        model=model, save_name=f"{end_date}_lstm_{num_layers}layers",
         scY=scaler_y, title_prefix="META"
     )
     if TENSORBOARD:
@@ -184,7 +184,7 @@ def main():
 
     # Save model
     Path("models").mkdir(parents=True, exist_ok=True)
-    torch.save(model, "models/backprophet_lstm.pth")
+    torch.save(model, f"models/lstm_{num_layers}layers.pth")
 
 
 if __name__ == "__main__":

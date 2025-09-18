@@ -20,8 +20,8 @@ def create_dataset_multivariate(df, target_col, look_back=60):
         Y.append(df[target_col].iloc[i+look_back])               # value for next day
     return np.array(X), np.array(Y)
 
-def predict_next_day(df_scaled, scaler_y, look_back, model, device):
-    # --- Predict next business day's close from the last available window ---
+# Predict next business day's close from the last available data row
+def predict_next_day(df_scaled, scaler_y, look_back, model, model_name, device):
     model.eval()
     with torch.no_grad():
         # Build the latest window (same scaling as during training)
@@ -38,7 +38,7 @@ def predict_next_day(df_scaled, scaler_y, look_back, model, device):
     last_date = pd.to_datetime(df_scaled.index[-1]).date()
     next_date = (pd.Timestamp(last_date) + BDay(1)).date()
 
-    print(f"Predicted META close for {next_date}: {yhat:.2f} USD")
+    print(f"Predicted META close for {model_name} on {next_date}: {yhat:.2f} USD")
     return None
 
 

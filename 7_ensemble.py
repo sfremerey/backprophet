@@ -90,7 +90,8 @@ def main():
         device = xm.xla_device()  # TPU (Tensor Processing Unit)
     print(f"Using device: {device}")
 
-    end_date = pd.Timestamp.today()
+    end_date = pd.Timestamp.today() - pd.DateOffset(days=1)
+    # end_date = pd.Timestamp.today()
     end_date = pd.to_datetime(end_date).date()
 
     df = pd.read_csv(f"data/{end_date}.csv")
@@ -127,8 +128,14 @@ def main():
     m2 = torch.load(f"models/{end_date}_gru_3layers.pth", weights_only=False).to(device)
     m3 = torch.load(f"models/{end_date}_lstm_4layers.pth", weights_only=False).to(device)
     ensemble = AvgEnsemble([m1, m2, m3]).to(device)
-
     scaler_y = MinMaxScaler().fit(df[["META_CLOSE"]])
+
+    print("\nATTENTION: The following output is no financial advice!!!")
+    bpu.predict_next_day(df_scaled, scaler_y, look_back, m1, "RNN", device)
+    bpu.predict_next_day(df_scaled, scaler_y, look_back, m2, "GRU", device)
+    bpu.predict_next_day(df_scaled, scaler_y, look_back, m3, "LSTM", device)
+    bpu.predict_next_day(df_scaled, scaler_y, look_back, ensemble, "Ensemble", device)
+
     bpu.plot_preds_time_and_xy(
         df=df, target_col="META_CLOSE", look_back=look_back,
         X_train=X_train, Y_train=Y_train,

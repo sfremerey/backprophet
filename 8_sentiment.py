@@ -7,17 +7,13 @@ import pandas as pd
 end_date = pd.Timestamp.today()
 end_date = pd.to_datetime(end_date).date()
 file_path = "data/META_sentiment.csv"
-
-
 # prompt = ("Please give me an assessment of Meta shares (ISIN: US30303M1027) based on current news you think are relevant on a scale of 1-100 (1 very poor, 100 very good). Please return only a single int number as your answer.")
 prompt = ("Please give me an assessment of Meta shares (ISIN: US30303M1027) based on current news within the past 7 days,"
           " using at least 6 reputable financial sources. Use sentiment analysis and any major events impacting the stock."
           " Rate on a scale of 1-100 (1 very poor, 100 very good). Return only a single int as the answer.")
-
 # IMPORTANT: secrets.json needs to be generated before running this script, cf. README!
 with open("secrets.json") as f:
     secrets = json.load(f)
-
 gemini_score = 0
 perplexity_score = 0
 
@@ -29,7 +25,6 @@ gemini_models = ["gemini-2.5-pro", "gemini-2.5-flash", "gemini-2.5-flash-lite"]
 
 # Try different Gemini models as better models are mostly not available
 for gemini_model in gemini_models:
-
     # Send an API request to the Gemini API
     print(f"Send API request to the Gemini API using model {gemini_model}...")
     gemini_response = requests.post(
@@ -59,7 +54,6 @@ for gemini_model in gemini_models:
     else:
         print(f"Gemini model {gemini_model} currently not available.")
         print(f"Error was: {gemini_response.text}")
-
 
 # Crawl news score from Perplexity, available models:
 # sonar - Fast, straightforward answers

@@ -15,7 +15,7 @@ def create_dataset_multivariate(df, target_col, look_back=60):
     feature_cols = [c for c in df.columns if c != "DATE"]  # DATE anyway is index
     for i in range(len(df) - look_back):
         X.append(df[feature_cols].iloc[i:i+look_back].values)      # (look_back, n_feat)
-        Y.append(df[target_col].iloc[i + look_back])               # value for next day
+        Y.append(df[target_col].iloc[i+look_back])               # value for next day
     return np.array(X), np.array(Y)
 
 # This function is mainly written by ChatGPT 5

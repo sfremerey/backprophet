@@ -33,6 +33,7 @@ def main():
         device = xm.xla_device()  # TPU (Tensor Processing Unit)
     print(f"Using device: {device}")
 
+    # end_date = pd.Timestamp.today() - pd.DateOffset(days=1)  # Only use if you want to run the model again for e.g. yesterday
     end_date = pd.Timestamp.today()
     end_date = pd.to_datetime(end_date).date()
     df = pd.read_csv(f"data/{end_date}.csv")

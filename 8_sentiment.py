@@ -96,9 +96,7 @@ except Exception as e:
     print("Error was:", repr(e))
 
 new_row = {"DATE": f"{end_date}", "PERPLEXITY_SCORE": perplexity_score, "GEMINI_SCORE": gemini_score}
-
 df = pd.DataFrame([new_row])
-
 print(f"Save data to {file_path}")
 if os.path.isfile(file_path):
     df.to_csv(file_path, mode="a", header=False, index=False)

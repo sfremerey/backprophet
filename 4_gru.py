@@ -169,8 +169,6 @@ def main():
         if TENSORBOARD:
             writer.add_scalar("Loss/train_epoch_avg", avg_loss, epoch)
 
-        # print(f"Epoch {epoch + 1:03d}/{training_epochs} | avg_loss={avg_loss:.4f} | {epoch_time:.2f}s")
-
         # Evaluate every 2 epochs
         if (epoch + 1) % 2 == 0:
             evaluate(epoch + 1)

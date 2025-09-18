@@ -116,6 +116,7 @@ def main():
     # Imputing, dropping NaN values, save df
     print("\n df before imputing and dropping NaN values:")
     df.info()
+    df = df.drop_duplicates(subset=["DATE"], keep="first")  # Sometimes we get duplicated rows, remove them
     df = df.ffill()  # Impute NA/NaN values by propagating the last valid observation to next valid.
     df = df.dropna()  # Drop all rows with NA/NaN values, could e.g. happen when some of the FRED values are not there for the very 1st row
     print("\n df after imputing and dropping NaN values:")

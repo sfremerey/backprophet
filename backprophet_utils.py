@@ -8,6 +8,7 @@ np.random.seed(42)
 
 
 # Inspired by https://medium.com/thedeephub/rnns-in-action-predicting-stock-prices-with-recurrent-neural-networks-9155a33c4c3b
+# "Given the past 60 days, predict tomorrow’s target value."
 def create_dataset_multivariate(df, target_col, look_back=60):
     X = []
     Y = []

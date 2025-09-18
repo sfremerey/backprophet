@@ -3,6 +3,7 @@ import torch
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
+from pandas.tseries.offsets import BDay
 from matplotlib.ticker import MaxNLocator, NullLocator, NullFormatter
 np.random.seed(42)
 
@@ -18,6 +19,28 @@ def create_dataset_multivariate(df, target_col, look_back=60):
         X.append(df[feature_cols].iloc[i:i+look_back].values)      # (look_back, n_feat)
         Y.append(df[target_col].iloc[i+look_back])               # value for next day
     return np.array(X), np.array(Y)
+
+def predict_next_day(df_scaled, scaler_y, look_back, model, device):
+    # --- Predict next business day's close from the last available window ---
+    model.eval()
+    with torch.no_grad():
+        # Build the latest window (same scaling as during training)
+        feature_cols = list(df_scaled.columns)  # DATE is index already
+        last_window_scaled = df_scaled[feature_cols].iloc[-look_back:].values  # (look_back, n_features)
+        x_latest = torch.tensor(last_window_scaled, dtype=torch.float32).unsqueeze(0).to(device)  # (1, look_back, n_features)
+
+        yhat_scaled = model(x_latest).cpu().numpy().ravel()[0]  # prediction in scaled space
+
+    # Inverse-transform to original price scale
+    yhat = scaler_y.inverse_transform(np.array([[yhat_scaled]])).ravel()[0]
+
+    # Compute next business day
+    last_date = pd.to_datetime(df_scaled.index[-1]).date()
+    next_date = (pd.Timestamp(last_date) + BDay(1)).date()
+
+    print(f"Predicted META close for {next_date}: {yhat:.2f} USD")
+    return None
+
 
 # This function is mainly written by ChatGPT 5
 def plot_preds_time_and_xy(df, target_col, look_back,

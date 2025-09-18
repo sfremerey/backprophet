@@ -71,8 +71,47 @@ def main():
     m3 = torch.load("models/lstm_4layers.pth", weights_only=False).to(device)
 
     ensemble = AvgEnsemble([m1, m2, m3]).to(device)
+
+    # inserted part
+
+    end_date = pd.Timestamp.today()
+    end_date = pd.to_datetime(end_date).date()
+    df = pd.read_csv(f"data/{end_date}.csv")
+    df.set_index("DATE", inplace=True)  # Set index of df to "DATE" column so that scaler doesn't scale date
+
+    scaler = MinMaxScaler()  # Other possible scalers would be: StandardScaler, RobustScaler
+    scaled_values = scaler.fit_transform(df)
+    df_scaled = pd.DataFrame(scaled_values, columns=df.columns, index=df.index)
+
+    X, y = bpu.create_dataset_multivariate(df_scaled, target_col="META_CLOSE", look_back=60)
+    print("X shape:", X.shape)  # (num_samples, 60, num_features)
+    print("y shape:", y.shape)  # (num_samples,)
+    # Shuffle=False important for time series data
+    # Cf. e.g. https://stackoverflow.com/questions/74025273/is-train-test-splitshuffle-false-appropriate-for-time-series
+    X_train, X_test, Y_train, Y_test = train_test_split(X, y, test_size=0.2, random_state=42, shuffle=False)
+
+    look_back = X_train.shape[1]
+    n_features = X_train.shape[2]
+    input_dim = look_back * n_features
+
+    # Reshape X to 2D tensor for MLP
+    X_train = torch.tensor(X_train, dtype=torch.float32)
+    X_test = torch.tensor(X_test, dtype=torch.float32)
+
+    # Regression targets need to be float and (same, 1)
+    Y_train = torch.tensor(Y_train, dtype=torch.float32).reshape(-1, 1)
+    Y_test = torch.tensor(Y_test, dtype=torch.float32).reshape(-1, 1)
+
+    # Timestamp for Tensorboard
+    now = datetime.datetime.now()
+    date_time = now.strftime("%Y%m%d-%H%M%S")
+
+
+
+
+
     # todo build xb
-    y_ensemble = ensemble(xb)
+    y_ensemble = ensemble(X_test)
 
 
 if __name__ == "__main__":

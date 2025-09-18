@@ -102,7 +102,7 @@ def main():
 
     # For TensorBoard
     writer = SummaryWriter(
-        f"runs/simplelinear_{date_time}_m1-ep{training_epochs}-lr{learning_rate}-dr{dropout_rate}-bat{batch_size}-hid{hidden_size}"
+        f"runs/rnn_{num_layers}layers"
     )
 
     # Add a small graph once (dummy input to avoid pushing full test set)

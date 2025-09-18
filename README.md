@@ -4,7 +4,7 @@ To assure that the most recent data is crawled, each Python script should be run
 The order is defined by the preceding number of each script.
 
 ## Python requirements
-This software is tested under Windows 11, Python 3.13.5 and PyTorch using CPU.
+This software is tested under Windows 11, Python 3.13.5 and PyTorch using CPU for computations.
 At first, it is recommended to install the required Python packages via `pip install`.
 You can also call `pip install -r requirements.txt`
 

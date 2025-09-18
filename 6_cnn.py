@@ -2,7 +2,6 @@ import datetime
 import os
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
 import pandas as pd
 import numpy as np
 import backprophet_utils as bpu
@@ -19,22 +18,24 @@ from tqdm import tqdm
 TENSORBOARD = True  # Use tensorboard for logging
 
 
+# This class is written by ChatGPT 5
 class CNNModel(nn.Module):
-    def __init__(self, hidden_size, kernel_size, num_classes):
-        super(CNNModel, self).__init__()
-        self.conv1 = nn.Conv2d(in_channels=1, out_channels=hidden_size, kernel_size=kernel_size, stride=1, padding=1)
-        # Performs worse with 2 conf layers
-        # self.conv2 = nn.Conv2d(in_channels=hidden_size, out_channels=hidden_size, kernel_size=kernel_size, stride=1, padding=1)
-        self.pool = nn.AdaptiveAvgPool2d((1, 1))
-        self.fc1 = nn.Linear(hidden_size, num_classes)
+    def __init__(self, n_features: int, hidden: int = 128, k: int = 3, num_classes: int = 1, pdrop: float = 0.1):
+        super().__init__()
+        self.net = nn.Sequential(
+            nn.Conv1d(n_features, hidden, kernel_size=k, padding=k//2),
+            nn.LeakyReLU(0.1, inplace=True),
+            nn.Conv1d(hidden, hidden, kernel_size=k, padding=k//2),
+            nn.LeakyReLU(0.1, inplace=True),
+            nn.Dropout(pdrop),
+            nn.AdaptiveAvgPool1d(1),
+            nn.Flatten(),
+            nn.Linear(hidden, num_classes)
+        )
 
     def forward(self, x):
-        x = x.unsqueeze(1)
-        x = F.leaky_relu(self.conv1(x))
-        # x = F.leaky_relu(self.conv2(x))
-        x = self.pool(x).squeeze(-1).squeeze(-1)
-        x = self.fc1(x)
-        return x
+        x = x.permute(0, 2, 1)
+        return self.net(x)
 
 def main():
     # Set torch device
@@ -89,9 +90,8 @@ def main():
     training_epochs = 300
     batch_size = 128
     hidden_size = 256
-    kernel_size = 2
 
-    model = CNNModel(hidden_size, kernel_size, 1).to(device)
+    model = CNNModel(n_features, hidden=hidden_size, k=3, num_classes=1, pdrop=0.1).to(device)
 
     criterion = torch.nn.MSELoss()
     mae_loss = torch.nn.L1Loss(reduction="mean")  # MAE
@@ -177,7 +177,7 @@ def main():
         df=df, target_col="META_CLOSE", look_back=look_back,
         X_train=X_train, Y_train=Y_train,
         X_test=X_test, Y_test=Y_test,
-        model=model, save_name=f"{end_date}_backprophet_cnn",
+        model=model, save_name=f"{end_date}_cnn",
         scY=scaler_y, title_prefix="META"
     )
     if TENSORBOARD:
@@ -185,7 +185,7 @@ def main():
 
     # Save model
     Path("models").mkdir(parents=True, exist_ok=True)
-    torch.save(model, f"models/{end_date}_backprophet_cnn.pth")
+    torch.save(model, f"models/{end_date}_cnn.pth")
 
 
 if __name__ == "__main__":

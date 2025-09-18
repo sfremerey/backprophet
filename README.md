@@ -25,7 +25,7 @@ Then you can also assert that the most recent data is used, ideally from yesterd
 * (optional) `8_sentiment.py`: Sends API requests to LLMs to get sentiment data, cf. below for instructions how to run
 
 ## Sentiment
-If you also want to do a sentimental analysis using LLMs, hence getting a score from 1-100 based on current news (currently only META shares is implemented), you at first need to create a file named `secrets.json`. This is read by the Python script `8_sentiment.py`.
+If you also want to do a sentimental analysis using LLMs, hence getting a score from 1-100 based on current news (currently only META shares is implemented), you at first need to create a file named `secrets.json` in the root of this project. This is read by the Python script `8_sentiment.py`.
 To create the API key for Google Gemini, cf. [here](https://aistudio.google.com/app/apikey) and for Perplexity cf. [here](https://www.perplexity.ai/account/api)
 It strictly needs to follow this format:
 

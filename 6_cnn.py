@@ -190,11 +190,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-
-# results
-# 1 conv layer
-# [Train] MAE=26.6323, RMSE=33.7006
-# [ Test ] MAE=239.0435, RMSE=267.4163
-
-
-# 2 conv layer

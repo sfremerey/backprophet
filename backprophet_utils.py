@@ -23,13 +23,14 @@ def create_dataset_multivariate(df, target_col, look_back=60):
 # Predict next business day's close from the last available data row
 def predict_next_day(df_scaled, scaler_y, look_back, model, model_name, device):
     model.eval()
-    with torch.no_grad():
+    with torch.no_grad():  # Disables gradient calculation, hence dropout is disabled
         # Build the latest window (same scaling as during training)
         feature_cols = list(df_scaled.columns)  # DATE is index already
         last_window_scaled = df_scaled[feature_cols].iloc[-look_back:].values  # (look_back, n_features)
         x_latest = torch.tensor(last_window_scaled, dtype=torch.float32).unsqueeze(0).to(device)  # (1, look_back, n_features)
 
-        yhat_scaled = model(x_latest).cpu().numpy().ravel()[0]  # prediction in scaled space
+        # run model, get on CPU and in numpy form, ravel() flattens the array to 1D, prediction in scaled space
+        yhat_scaled = model(x_latest).cpu().numpy().ravel()[0]
 
     # Inverse-transform to original price scale
     yhat = scaler_y.inverse_transform(np.array([[yhat_scaled]])).ravel()[0]

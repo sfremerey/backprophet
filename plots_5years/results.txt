@@ -7,12 +7,12 @@ Predicted META close for LSTM on 2025-09-17: 755.71 USD
 Predicted META close for Ensemble on 2025-09-17: 747.41 USD
 Real META close on 2025-09-17: 775.72 USD
 --> Best model (GRU) has detected "short" correct, but prediction is 7.53 USD lower
---> 0,97% deviation from real META close
+--> -0,97% deviation from real META close
 
 Predicted META close for RNN on 2025-09-18: 724.68 USD
 Predicted META close for GRU on 2025-09-18: 766.21 USD
 Predicted META close for LSTM on 2025-09-18: 751.32 USD
 Predicted META close for Ensemble on 2025-09-18: 747.40 USD
-Real META close on 2025-09-18: ??? USD
---> 
---> 
+Real META close on 2025-09-18: 780.25 USD
+--> Best model (GRU) has not detected "long" correct
+--> -1,8% deviation from real META close

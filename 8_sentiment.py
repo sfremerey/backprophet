@@ -24,6 +24,7 @@ perplexity_score = 0
 gemini_models = ["gemini-2.5-pro", "gemini-2.5-flash", "gemini-2.5-flash-lite"]
 
 # Try different Gemini models as better models are mostly not available
+# Select best model first, then break loop according to availability
 for gemini_model in gemini_models:
     # Send an API request to the Gemini API
     print(f"Send API request to the Gemini API using model {gemini_model}...")
@@ -48,6 +49,7 @@ for gemini_model in gemini_models:
     if gemini_response.status_code == 200:
         try:
             gemini_score = gemini_response.json()["candidates"][0]["content"]["parts"][0]["text"].split()[-1]
+            break
         except Exception as e:
             print(f"Gemini model {gemini_model} currently not available.")
             print("Error was:", repr(e))

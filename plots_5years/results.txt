@@ -16,3 +16,8 @@ Predicted META close for Ensemble on 2025-09-18: 747.40 USD
 Real META close on 2025-09-18: 780.25 USD
 --> Best model (GRU) has not detected "long" correct
 --> -1,8% deviation from real META close
+
+Predicted META close for RNN on 2025-09-19: 741.17 USD
+Predicted META close for GRU on 2025-09-19: 770.34 USD
+Predicted META close for LSTM on 2025-09-19: 739.54 USD
+Predicted META close for Ensemble on 2025-09-19: 750.35 USD

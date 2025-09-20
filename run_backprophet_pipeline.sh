@@ -1,7 +1,7 @@
-#/bin/bash
+#/bin/fish
 cd /home/sfremerey/backprophet
 git pull
-source .venv/bin/activate
+source .venv/bin/activate.fish
 python 1_datacrawler.py
 python 2_simple_mlp.py
 python 3_lstm.py

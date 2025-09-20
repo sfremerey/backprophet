@@ -14,6 +14,7 @@ from tqdm import tqdm
 
 
 TENSORBOARD = False  # Use tensorboard for logging, but start manually in the background
+RENDER_PLOTS = False
 if TENSORBOARD:
     from torch.utils.tensorboard import SummaryWriter
 
@@ -162,13 +163,14 @@ def main():
     # Final eval + close TB
     evaluate(training_epochs)
     scaler_y = MinMaxScaler().fit(df[["META_CLOSE"]])
-    bpu.plot_preds_time_and_xy(
-        df=df, target_col="META_CLOSE", look_back=look_back,
-        X_train=X_train, Y_train=Y_train,
-        X_test=X_test, Y_test=Y_test,
-        model=model, save_name=f"{end_date}_simple_mlp",
-        scY=scaler_y, title_prefix="META"
-    )
+    if RENDER_PLOTS:
+        bpu.plot_preds_time_and_xy(
+            df=df, target_col="META_CLOSE", look_back=look_back,
+            X_train=X_train, Y_train=Y_train,
+            X_test=X_test, Y_test=Y_test,
+            model=model, save_name=f"{end_date}_simple_mlp",
+            scY=scaler_y, title_prefix="META"
+        )
     if TENSORBOARD:
         writer.close()
 

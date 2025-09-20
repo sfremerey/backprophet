@@ -12,10 +12,12 @@ np.random.seed(42)
 from pathlib import Path
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.model_selection import train_test_split
-from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
 
-TENSORBOARD = True  # Use tensorboard for logging
+TENSORBOARD = False  # Use tensorboard for logging, but start manually in the background
+RENDER_PLOTS = False
+if TENSORBOARD:
+    from torch.utils.tensorboard import SummaryWriter
 
 
 # This class is written by ChatGPT 5
@@ -98,9 +100,10 @@ def main():
     optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
 
     # For TensorBoard
-    writer = SummaryWriter(
-        f"runs/cnn_{date_time}"
-    )
+    if TENSORBOARD:
+        writer = SummaryWriter(
+            f"runs/cnn_{date_time}"
+        )
 
     # Add a small graph once (dummy input to avoid pushing full test set)
     try:
@@ -171,13 +174,14 @@ def main():
     # Final eval + close TB
     evaluate(training_epochs)
     scaler_y = MinMaxScaler().fit(df[["META_CLOSE"]])
-    bpu.plot_preds_time_and_xy(
-        df=df, target_col="META_CLOSE", look_back=look_back,
-        X_train=X_train, Y_train=Y_train,
-        X_test=X_test, Y_test=Y_test,
-        model=model, save_name=f"{end_date}_cnn",
-        scY=scaler_y, title_prefix="META"
-    )
+    if RENDER_PLOTS:
+        bpu.plot_preds_time_and_xy(
+            df=df, target_col="META_CLOSE", look_back=look_back,
+            X_train=X_train, Y_train=Y_train,
+            X_test=X_test, Y_test=Y_test,
+            model=model, save_name=f"{end_date}_cnn",
+            scY=scaler_y, title_prefix="META"
+        )
     if TENSORBOARD:
         writer.close()
 

@@ -9,6 +9,9 @@ from sklearn.preprocessing import MinMaxScaler
 from sklearn.model_selection import train_test_split
 
 
+RENDER_PLOTS = False
+
+
 class AvgEnsemble(nn.Module):
     def __init__(self, models):
         super().__init__()
@@ -136,13 +139,14 @@ def main():
     lstm_pred = bpu.predict_next_day(df_scaled, scaler_y, look_back, m3, "LSTM", device)
     ensemble_pred = bpu.predict_next_day(df_scaled, scaler_y, look_back, ensemble, "Ensemble", device)
 
-    # bpu.plot_preds_time_and_xy(
-    #     df=df, target_col="META_CLOSE", look_back=look_back,
-    #     X_train=X_train, Y_train=Y_train,
-    #     X_test=X_test, Y_test=Y_test,
-    #     model=ensemble, save_name=f"{end_date}_ensemble",
-    #     scY=scaler_y, title_prefix="META"
-    # )
+    if RENDER_PLOTS:
+        bpu.plot_preds_time_and_xy(
+            df=df, target_col="META_CLOSE", look_back=look_back,
+            X_train=X_train, Y_train=Y_train,
+            X_test=X_test, Y_test=Y_test,
+            model=ensemble, save_name=f"{end_date}_ensemble",
+            scY=scaler_y, title_prefix="META"
+        )
 
     new_row = {"DATE": end_date, "RNN_PRED": rnn_pred, "GRU_PRED": gru_pred,
                "LSTM_PRED": lstm_pred, "ENSEMBLE_PRED": ensemble_pred}

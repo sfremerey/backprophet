@@ -91,7 +91,7 @@ except Exception as e:
     print("Perplexity score currently not available.")
     print("Error was:", repr(e))
 
-new_row = {"DATE": f"{end_date}", "PERPLEXITY_SCORE": perplexity_score, "GEMINI_SCORE": gemini_score}
+new_row = {"DATE": f"{end_date}", "PERPLEXITY_SCORE": perplexity_score, "PERPLEXITY_MODEL": perplexity_model, "GEMINI_SCORE": gemini_score, "GEMINI_MODEL": gemini_model}
 df = pd.DataFrame([new_row])
 print(f"Save data to {file_path}")
 if os.path.isfile(file_path):

@@ -40,7 +40,7 @@ def predict_next_day(df_scaled, scaler_y, look_back, model, model_name, device):
     next_date = (pd.Timestamp(last_date) + BDay(1)).date()
 
     print(f"Predicted META close for {model_name} on {next_date}: {yhat:.2f} USD")
-    return None
+    return yhat
 
 
 # This function is mainly written by ChatGPT 5

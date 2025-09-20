@@ -131,18 +131,29 @@ def main():
     scaler_y = MinMaxScaler().fit(df[["META_CLOSE"]])
 
     print("\nATTENTION: The following output is no financial advice!!!")
-    bpu.predict_next_day(df_scaled, scaler_y, look_back, m1, "RNN", device)
-    bpu.predict_next_day(df_scaled, scaler_y, look_back, m2, "GRU", device)
-    bpu.predict_next_day(df_scaled, scaler_y, look_back, m3, "LSTM", device)
-    bpu.predict_next_day(df_scaled, scaler_y, look_back, ensemble, "Ensemble", device)
+    rnn_pred = bpu.predict_next_day(df_scaled, scaler_y, look_back, m1, "RNN", device)
+    gru_pred = bpu.predict_next_day(df_scaled, scaler_y, look_back, m2, "GRU", device)
+    lstm_pred = bpu.predict_next_day(df_scaled, scaler_y, look_back, m3, "LSTM", device)
+    ensemble_pred = bpu.predict_next_day(df_scaled, scaler_y, look_back, ensemble, "Ensemble", device)
 
-    bpu.plot_preds_time_and_xy(
-        df=df, target_col="META_CLOSE", look_back=look_back,
-        X_train=X_train, Y_train=Y_train,
-        X_test=X_test, Y_test=Y_test,
-        model=ensemble, save_name=f"{end_date}_ensemble",
-        scY=scaler_y, title_prefix="META"
-    )
+    # bpu.plot_preds_time_and_xy(
+    #     df=df, target_col="META_CLOSE", look_back=look_back,
+    #     X_train=X_train, Y_train=Y_train,
+    #     X_test=X_test, Y_test=Y_test,
+    #     model=ensemble, save_name=f"{end_date}_ensemble",
+    #     scY=scaler_y, title_prefix="META"
+    # )
+
+    new_row = {"DATE": end_date, "RNN_PRED": rnn_pred, "GRU_PRED": gru_pred,
+               "LSTM_PRED": lstm_pred, "ENSEMBLE_PRED": ensemble_pred}
+    df = pd.DataFrame([new_row])
+    file_path = "data/META_predictions.csv"
+    print(f"Save data to {file_path}")
+    if os.path.isfile(file_path):
+        df.to_csv(file_path, mode="a", header=False, index=False)
+    else:
+        df.to_csv(file_path, mode="w", header=True, index=False)
+
 
 if __name__ == "__main__":
     main()

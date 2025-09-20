@@ -10,11 +10,12 @@ np.random.seed(42)
 from pathlib import Path
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.model_selection import train_test_split
-from torch.utils.tensorboard import SummaryWriter
 from tqdm import tqdm
 
 
-TENSORBOARD = True  # Use tensorboard for logging, but start manually in the background
+TENSORBOARD = False  # Use tensorboard for logging, but start manually in the background
+if TENSORBOARD:
+    from torch.utils.tensorboard import SummaryWriter
 
 
 def main():
@@ -88,9 +89,10 @@ def main():
     optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
 
     # For TensorBoard
-    writer = SummaryWriter(
-        f"runs/simplemlp_{date_time}"
-    )
+    if TENSORBOARD:
+        writer = SummaryWriter(
+            f"runs/simplemlp_{date_time}"
+        )
 
     # Add a small graph once (dummy input to avoid pushing full test set)
     try:

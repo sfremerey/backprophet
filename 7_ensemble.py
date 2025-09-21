@@ -127,9 +127,9 @@ def main():
     now = datetime.datetime.now()
     date_time = now.strftime("%Y%m%d-%H%M%S")
 
-    m1 = torch.load(f"models/{end_date}_rnn_4layers.pth", weights_only=False).to(device)
-    m2 = torch.load(f"models/{end_date}_gru_3layers.pth", weights_only=False).to(device)
-    m3 = torch.load(f"models/{end_date}_lstm_4layers.pth", weights_only=False).to(device)
+    m1 = torch.load(f"models/{end_date}_rnn.pth", weights_only=False).to(device)
+    m2 = torch.load(f"models/{end_date}_gru.pth", weights_only=False).to(device)
+    m3 = torch.load(f"models/{end_date}_lstm.pth", weights_only=False).to(device)
     ensemble = AvgEnsemble([m1, m2, m3]).to(device)
     scaler_y = MinMaxScaler().fit(df[["META_CLOSE"]])
 

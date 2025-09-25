@@ -16,6 +16,7 @@ with open("secrets.json") as f:
     secrets = json.load(f)
 gemini_score = 0
 perplexity_score = 0
+chatgpt_score = 0
 
 # Crawl news score from Google Gemini, available models:
 # gemini-2.5-pro
@@ -91,7 +92,35 @@ except Exception as e:
     print("Perplexity score currently not available.")
     print("Error was:", repr(e))
 
+# Send an API request to the ChatGPT API
+# print("Send API request to the ChatGPT API...")
+# chatgpt_model = "gpt-5"
+# chatgpt_response = requests.post(
+#     "https://api.openai.com/v1/responses",
+#     headers={
+#         "Authorization": f"Bearer {secrets["OPENAI_API_KEY"]}",
+#         "Content-Type": "application/json"
+#     },
+#     json={
+#         "model": chatgpt_model,
+#         "input": prompt
+#     }
+# )
+#
+# print("Try to parse API request from the ChatGPT API...")
+# try:
+#     chatgpt_score = int(chatgpt_response.json()["choices"][0]["message"]["content"])  # NEEDS TO BE MODIFIED; NOT TESTED!
+# except Exception as e:
+#     print("ChatGPT score currently not available.")
+#     print("Error was:", repr(e))
 new_row = {"DATE": f"{end_date}", "PERPLEXITY_SCORE": perplexity_score, "PERPLEXITY_MODEL": perplexity_model, "GEMINI_SCORE": gemini_score, "GEMINI_MODEL": gemini_model}
+# new_row = {
+#     "DATE": f"{end_date}",
+#     "PERPLEXITY_SCORE": perplexity_score, "PERPLEXITY_MODEL": perplexity_model,
+#     "GEMINI_SCORE": gemini_score, "GEMINI_MODEL": gemini_model,
+#     "CHATGPT_SCORE": chatgpt_score, "CHATGPT_MODEL": chatgpt_model
+# }
+
 df = pd.DataFrame([new_row])
 print(f"Save data to {file_path}")
 if os.path.isfile(file_path):

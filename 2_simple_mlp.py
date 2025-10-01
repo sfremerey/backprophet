@@ -1,5 +1,4 @@
 import datetime
-import os
 import torch
 import torch.nn as nn
 import pandas as pd
@@ -20,21 +19,7 @@ if TENSORBOARD:
 
 
 def main():
-    # Set torch device
-    num_cpus = os.cpu_count() or 1
-    print(f"Torch will use {num_cpus} CPUs for computation...")
-    torch.set_num_threads(num_cpus)
-    # Enable hardware accelerator if available
-    device = torch.device("cpu")
-    if torch.backends.mps.is_available():
-        device = torch.device("mps")  # Apple Silicon
-    if torch.cuda.is_available() or torch.version.hip is not None:  # nvidia or AMD
-        device = torch.device("cuda")  # NVIDIA
-    if "COLAB_TPU_ADDR" in os.environ:  # TPU available on Google Colab only
-        import torch_xla.core.xla_model as xm
-        device = xm.xla_device()  # TPU (Tensor Processing Unit)
-    print(f"Using device: {device}")
-
+    device = bpu.set_torch_device()
     # end_date = pd.Timestamp.today() - pd.DateOffset(days=1)  # Only use if you want to run the model again for e.g. yesterday
     end_date = pd.Timestamp.today()
     end_date = pd.to_datetime(end_date).date()

@@ -1,3 +1,4 @@
+import os
 import pandas as pd
 import torch
 import numpy as np
@@ -19,6 +20,23 @@ def create_dataset_multivariate(df, target_col, look_back=60):
         X.append(df[feature_cols].iloc[i:i+look_back].values)      # (look_back, n_feat)
         Y.append(df[target_col].iloc[i+look_back])               # value for next day
     return np.array(X), np.array(Y)
+
+# Set torch device
+def set_torch_device():
+    num_cpus = os.cpu_count() or 1
+    print(f"Torch will use {num_cpus} CPUs for computation...")
+    torch.set_num_threads(num_cpus)
+    # Enable hardware accelerator if available
+    device = torch.device("cpu")
+    if torch.backends.mps.is_available():
+        device = torch.device("mps")  # Apple Silicon
+    if torch.cuda.is_available() or torch.version.hip is not None:  # nvidia or AMD
+        device = torch.device("cuda")  # NVIDIA
+    if "COLAB_TPU_ADDR" in os.environ:  # TPU available on Google Colab only
+        import torch_xla.core.xla_model as xm
+        device = xm.xla_device()  # TPU (Tensor Processing Unit)
+    print(f"Using device: {device}")
+    return device
 
 # Predict next business day's close from the last available data row
 def predict_next_day(df_scaled, scaler_y, look_back, model, model_name, device):

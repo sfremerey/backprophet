@@ -25,7 +25,7 @@ class RNNModel(nn.Module):
         self.fc2 = nn.Linear(hidden_size, num_classes)
 
     def forward(self, x):
-        h0 = torch.zeros(self.num_layers, x.size(0), self.hidden_size)
+        h0 = torch.zeros(self.num_layers, x.size(0), self.hidden_size).to(x.device)
         out, _ = self.rnn(x, h0)
         # out, _ = self.gru2(out, h0)
         out = self.fc(out[:, -1, :])

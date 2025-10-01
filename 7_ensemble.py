@@ -1,11 +1,9 @@
 import datetime
-import os
-import backprophet_utils as bpu
-import pandas as pd
 import torch
 import torch.nn as nn
-
-from sklearn.preprocessing import MinMaxScaler
+import pandas as pd
+import numpy as np
+import backprophet_utils as bpu
 
 
 RENDER_PLOTS = False
@@ -85,10 +83,6 @@ def main():
     df = bpu.get_df(end_date)
     df_scaled = bpu.scale_df(df)
     input_dim, n_features, X_train, X_test, Y_train, Y_test = bpu.get_train_test_set(df_scaled)
-
-    # Timestamp for Tensorboard
-    now = datetime.datetime.now()
-    date_time = now.strftime("%Y%m%d-%H%M%S")
 
     m1 = torch.load(f"models/{end_date}_rnn.pth", weights_only=False).to(device)
     m2 = torch.load(f"models/{end_date}_gru.pth", weights_only=False).to(device)

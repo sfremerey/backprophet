@@ -5,6 +5,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 from pandas.tseries.offsets import BDay
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import MinMaxScaler
 from matplotlib.ticker import MaxNLocator, NullLocator, NullFormatter
 np.random.seed(42)
 
@@ -37,6 +39,46 @@ def set_torch_device():
         device = xm.xla_device()  # TPU (Tensor Processing Unit)
     print(f"Using device: {device}")
     return device
+
+def get_df(end_date):
+    df = pd.read_csv(f"data/{end_date}.csv")
+    df.set_index("DATE", inplace=True)  # Set index of df to "DATE" column so that scaler doesn't scale date
+    # Dropping of columns is only for testing purposes
+    # The more rows dropped, the worse the results on the train set, but the better the results on the test set
+    # df.drop(columns=["FEARANDGREED", "^SPX_CLOSE", "^SPX_VOLUME", "^DJI_CLOSE", "^DJI_VOLUME", "GPRD", "META_VOLUME"], inplace=True)
+    return df
+
+def scale_df(df):
+    scaler = MinMaxScaler()  # Other possible scalers would be: StandardScaler, RobustScaler
+    scaled_values = scaler.fit_transform(df)
+    df_scaled = pd.DataFrame(scaled_values, columns=df.columns, index=df.index)
+    return df_scaled
+
+def get_train_test_set(df_scaled, mlp_model=False):
+    X, y = create_dataset_multivariate(df_scaled, target_col="META_CLOSE", look_back=60)
+    print("X shape:", X.shape)  # (num_samples, 60, num_features)
+    print("y shape:", y.shape)  # (num_samples,)
+    # Shuffle=False important for time series data
+    # Cf. e.g. https://stackoverflow.com/questions/74025273/is-train-test-splitshuffle-false-appropriate-for-time-series
+    X_train, X_test, Y_train, Y_test = train_test_split(X, y, test_size=0.2, random_state=42, shuffle=False)
+
+    look_back = X_train.shape[1]
+    n_features = X_train.shape[2]
+    input_dim = look_back * n_features
+
+    # Reshape X to 2D tensor in case of MLP model
+    if mlp_model:
+        X_train = torch.tensor(X_train, dtype=torch.float32).reshape(len(X_train), input_dim)
+        X_test = torch.tensor(X_test, dtype=torch.float32).reshape(len(X_test), input_dim)
+    else:
+        X_train = torch.tensor(X_train, dtype=torch.float32)
+        X_test = torch.tensor(X_test, dtype=torch.float32)
+
+    # Regression targets need to be float and (same, 1)
+    Y_train = torch.tensor(Y_train, dtype=torch.float32).reshape(-1, 1)
+    Y_test = torch.tensor(Y_test, dtype=torch.float32).reshape(-1, 1)
+    return input_dim, n_features, X_train, X_test, Y_train, Y_test
+
 
 # Predict next business day's close from the last available data row
 def predict_next_day(df_scaled, scaler_y, look_back, model, model_name, device):

@@ -37,3 +37,6 @@ It strictly needs to follow this format:
 ```
 
 Especially the sentiment analysis part is experimental.
+
+## License
+The contents of this repository follow the [Attribution 4.0 International (CC BY 4.0)](https://creativecommons.org/licenses/by/4.0) license.

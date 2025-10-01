@@ -61,7 +61,6 @@ def main():
     n_features = X_train.shape[2]
     input_dim = look_back * n_features
 
-    # Reshape X to 2D tensor for MLP
     X_train = torch.tensor(X_train, dtype=torch.float32)
     X_test = torch.tensor(X_test, dtype=torch.float32)
 

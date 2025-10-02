@@ -1,3 +1,4 @@
+import datetime
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 import numpy as np
@@ -9,7 +10,7 @@ from matplotlib.ticker import MaxNLocator, NullLocator, NullFormatter
 from pandas.tseries.offsets import BDay
 from pathlib import Path
 from sklearn.model_selection import train_test_split
-from sklearn.preprocessing import MinMaxScaler
+from sklearn.preprocessing import MinMaxScaler  #, StandardScaler, RobustScaler
 from tqdm import tqdm
 np.random.seed(42)
 torch.manual_seed(42)
@@ -46,15 +47,6 @@ def set_torch_device():
     return device
 
 
-def get_df(end_date):
-    df = pd.read_csv(f"data/{end_date}.csv")
-    df.set_index("DATE", inplace=True)  # Set index of df to "DATE" column so that scaler doesn't scale date
-    # Dropping of columns is only for testing purposes
-    # The more rows dropped, the worse the results on the train set, but the better the results on the test set
-    # df.drop(columns=["FEARANDGREED", "^SPX_CLOSE", "^SPX_VOLUME", "^DJI_CLOSE", "^DJI_VOLUME", "GPRD", "META_VOLUME"], inplace=True)
-    return df
-
-
 def scale_df(df):
     scaler = MinMaxScaler()  # Other possible scalers would be: StandardScaler, RobustScaler
     scaled_values = scaler.fit_transform(df)
@@ -62,9 +54,9 @@ def scale_df(df):
     return df_scaled
 
 
-def get_train_test_set(df_scaled, mlp_model=False):
-    X, y = create_dataset_multivariate(df_scaled, target_col="META_CLOSE", look_back=60)
-    print("X shape:", X.shape)  # (num_samples, 60, num_features)
+def get_train_test_set(df_scaled, model_name, look_back_period):
+    X, y = create_dataset_multivariate(df_scaled, target_col="META_CLOSE", look_back=look_back_period)
+    print("X shape:", X.shape)  # (num_samples, look_back_period, num_features)
     print("y shape:", y.shape)  # (num_samples,)
     # Shuffle=False important for time series data
     # Cf. e.g. https://stackoverflow.com/questions/74025273/is-train-test-splitshuffle-false-appropriate-for-time-series
@@ -75,7 +67,7 @@ def get_train_test_set(df_scaled, mlp_model=False):
     input_dim = look_back * n_features
 
     # Reshape X to 2D tensor in case of MLP model
-    if mlp_model:
+    if model_name == "simplemlp":
         X_train = torch.tensor(X_train, dtype=torch.float32).reshape(len(X_train), input_dim)
         X_test = torch.tensor(X_test, dtype=torch.float32).reshape(len(X_test), input_dim)
     else:
@@ -88,20 +80,39 @@ def get_train_test_set(df_scaled, mlp_model=False):
     return input_dim, n_features, X_train, X_test, Y_train, Y_test
 
 
-def train_eval_model(model, model_name, device, df, X_train, X_test, Y_train, Y_test, learning_rate, training_epochs, batch_size, hidden_size, end_date, RENDER_PLOTS, TENSORBOARD):
+class BackprophetData:
+    def __init__(self, end_date, model_name, look_back_period):
+        super(BackprophetData, self).__init__()
+        # Initialize df
+        self.end_date = end_date
+        self.model_name = model_name
+        self.look_back_period = look_back_period
+        self.df = pd.read_csv(f"data/{end_date}.csv")
+        self.df.set_index("DATE", inplace=True)  # Set index of df to "DATE" column so that scaler doesn't scale date
+        # Dropping of columns is only for testing purposes
+        # The more rows dropped, the worse the results on the train set, but the better the results on the test set
+        # self.df.drop(columns=["FEARANDGREED", "^SPX_CLOSE", "^SPX_VOLUME", "^DJI_CLOSE", "^DJI_VOLUME", "GPRD", "META_VOLUME"], inplace=True)
+        self.df_scaled = scale_df(self.df)
+        (self.input_dim, self.n_features, self.X_train, self.X_test, self.Y_train, self.Y_test) = get_train_test_set(self.df_scaled, self.model_name, self.look_back_period)
+
+
+def train_eval_model(model, backprophet_data, device, learning_rate, training_epochs, batch_size, RENDER_PLOTS, TENSORBOARD):
     criterion = nn.MSELoss()
     mae_loss = nn.L1Loss(reduction="mean")  # MAE
     optimizer = torch.optim.Adam(model.parameters(), lr=learning_rate)
 
     if TENSORBOARD:
         from torch.utils.tensorboard import SummaryWriter
+        # Timestamp for Tensorboard
+        now = datetime.datetime.now()
+        date_time = now.strftime("%Y%m%d-%H%M%S")
         writer = SummaryWriter(
-            f"runs/{model_name}_{date_time}"
+            f"runs/{backprophet_data.model_name}_{date_time}"
         )
 
     # Add a small graph once (dummy input to avoid pushing full test set)
     try:
-        writer.add_graph(model, torch.randn(1, input_dim).to(device))
+        writer.add_graph(model, torch.randn(1, backprophet_data.input_dim).to(device))
     except Exception as e:
         # Some environments may not support add_graph; safe to continue
         print(f"add_graph skipped: {e}")
@@ -109,14 +120,14 @@ def train_eval_model(model, model_name, device, df, X_train, X_test, Y_train, Y_
     def evaluate(epoch: int):
         model.eval()
         with (torch.no_grad()):
-            xtest = X_test.to(device)
-            ytest = Y_test.to(device)
+            xtest = backprophet_data.X_test.to(device)
+            ytest = backprophet_data.Y_test.to(device)
             y_pred_test = model(xtest)
             loss_test = criterion(y_pred_test, ytest).item()
             mae_test = mae_loss(y_pred_test, ytest).item()
 
-            xtrain = X_train.to(device)
-            ytrain = Y_train.to(device)
+            xtrain = backprophet_data.X_train.to(device)
+            ytrain = backprophet_data.Y_train.to(device)
             y_pred_train = model(xtrain)
             loss_train = criterion(y_pred_train, ytrain).item()
             mae_train = mae_loss(y_pred_train, ytrain).item()
@@ -136,9 +147,9 @@ def train_eval_model(model, model_name, device, df, X_train, X_test, Y_train, Y_
     model.train()
     for epoch in tqdm(range(training_epochs)):
         # Shuffle once per epoch
-        perm = torch.randperm(len(X_train))
-        Xs = X_train[perm]
-        Ys = Y_train[perm]
+        perm = torch.randperm(len(backprophet_data.X_train))
+        Xs = backprophet_data.X_train[perm]
+        Ys = backprophet_data.Y_train[perm]
 
         running_loss = 0.0
         n_batches = 0
@@ -166,13 +177,13 @@ def train_eval_model(model, model_name, device, df, X_train, X_test, Y_train, Y_
 
     # Final eval + close TB
     evaluate(training_epochs)
-    scaler_y = MinMaxScaler().fit(df[["META_CLOSE"]])
+    scaler_y = MinMaxScaler().fit(backprophet_data.df[["META_CLOSE"]])
     if RENDER_PLOTS:
-        bpu.plot_preds_time_and_xy(
-            df=df, target_col="META_CLOSE", look_back=look_back,
-            X_train=X_train, Y_train=Y_train,
-            X_test=X_test, Y_test=Y_test,
-            model=model, save_name=f"{end_date}_{model_name}",
+        plot_preds_time_and_xy(
+            df=backprophet_data.df, target_col="META_CLOSE", look_back=backprophet_data.look_back_period,
+            X_train=backprophet_data.X_train, Y_train=backprophet_data.Y_train,
+            X_test=backprophet_data.X_test, Y_test=backprophet_data.Y_test,
+            model=model, save_name=f"{backprophet_data.end_date}_{backprophet_data.model_name}",
             scY=scaler_y, title_prefix="META"
         )
     if TENSORBOARD:
@@ -180,7 +191,7 @@ def train_eval_model(model, model_name, device, df, X_train, X_test, Y_train, Y_
 
     # Save model
     Path("models").mkdir(parents=True, exist_ok=True)
-    torch.save(model, f"models/{end_date}_{model_name}.pth")
+    torch.save(model, f"models/{backprophet_data.end_date}_{backprophet_data.model_name}.pth")
 
 
 # Predict next business day's close from the last available data row

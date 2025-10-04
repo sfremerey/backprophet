@@ -2,6 +2,7 @@ import torch
 import pandas as pd
 import backprophet_models as bpm
 import backprophet_utils as bpu
+from sklearn.preprocessing import MinMaxScaler
 
 
 RENDER_PLOTS = False

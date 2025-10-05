@@ -50,6 +50,7 @@ for gemini_model in gemini_models:
     if gemini_response.status_code == 200:
         try:
             gemini_score = gemini_response.json()["candidates"][0]["content"]["parts"][0]["text"].split()[-1]
+            print(f"Successfully received Gemini score: {gemini_score}")
             break
         except Exception as e:
             print(f"Gemini model {gemini_model} currently not available.")
@@ -72,7 +73,7 @@ perplexity_score = None
 # Try 5 times until giving up
 while perplexity_counter < MAX_RETRIES:
     try:
-        print(f"Sending API request to Perplexity API (attempt {perplexity_counter + 1}/{max_retries})...")
+        print(f"Sending API request to Perplexity API (attempt {perplexity_counter + 1}/{MAX_RETRIES})...")
         perplexity_response = requests.post(
             "https://api.perplexity.ai/chat/completions",
             headers={
@@ -96,7 +97,7 @@ while perplexity_counter < MAX_RETRIES:
 
         # Parse response
         perplexity_score = int(perplexity_response.json()["choices"][0]["message"]["content"])
-        print(f"Successfully received score: {perplexity_score}")
+        print(f"Successfully received Perplexity score: {perplexity_score}")
         break
 
     except requests.exceptions.RequestException as e:
@@ -108,13 +109,13 @@ while perplexity_counter < MAX_RETRIES:
         perplexity_counter += 1
 
     # Exponential backoff (wait longer between retries)
-    if perplexity_counter < max_retries:
+    if perplexity_counter < MAX_RETRIES:
         wait_time = 2 ** perplexity_counter  # 1s, 2s, 4s, 8s, 16s
         print(f"Waiting {wait_time}s before retry...")
         time.sleep(wait_time)
 
 if perplexity_score is None:
-    print(f"Failed to get Perplexity score after {max_retries} attempts")
+    print(f"Failed to get Perplexity score after {MAX_RETRIES} attempts")
     # Handle failure case (use default, raise exception, etc.)
 
 # Send an API request to the ChatGPT API
@@ -136,6 +137,8 @@ if perplexity_score is None:
 # print("Try to parse API request from the ChatGPT API...")
 # try:
 #     chatgpt_score = int(chatgpt_response.json()["choices"][0]["message"]["content"])  # NEEDS TO BE MODIFIED; NOT TESTED!
+#     print(f"Successfully received ChatGPT score: {chatgpt_score}")
+
 # except Exception as e:
 #     print("ChatGPT score currently not available.")
 #     print("Error was:", repr(e))

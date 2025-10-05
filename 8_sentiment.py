@@ -116,7 +116,6 @@ while perplexity_counter < MAX_RETRIES:
 
 if perplexity_score is None:
     print(f"Failed to get Perplexity score after {MAX_RETRIES} attempts")
-    # Handle failure case (use default, raise exception, etc.)
 
 # Send an API request to the ChatGPT API
 # print("Send API request to the ChatGPT API...")

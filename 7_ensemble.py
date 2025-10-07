@@ -22,7 +22,7 @@ def main():
     m2 = torch.load(f"models/{end_date}_gru.pth", weights_only=False).to(device)
     m3 = torch.load(f"models/{end_date}_lstm.pth", weights_only=False).to(device)
     ensemble_model = bpm.AvgEnsemble([m1, m2, m3]).to(device)
-    scaler_y = MinMaxScaler().fit(backprophet_data.df[["META_CLOSE"]])
+    scaler_y = MinMaxScaler().fit(backprophet_data.df[["META_PCTCHANGE"]])
 
     print("\nATTENTION: The following output is no financial advice!!!")
     rnn_pred = bpu.predict_next_day(backprophet_data.df_scaled, scaler_y, backprophet_data.look_back_period, m1, "RNN", device)
@@ -32,7 +32,7 @@ def main():
 
     if RENDER_PLOTS:
         bpu.plot_preds_time_and_xy(
-            df=backprophet_data.df, target_col="META_CLOSE", look_back=backprophet_data.look_back_period,
+            df=backprophet_data.df, target_col="META_PCTCHANGE", look_back=backprophet_data.look_back_period,
             X_train=backprophet_data.X_train, Y_train=backprophet_data.Y_train,
             X_test=backprophet_data.X_test, Y_test=backprophet_data.Y_test,
             model=ensemble_model, save_name=f"{backprophet_data.end_date}_{backprophet_data.model_name}",

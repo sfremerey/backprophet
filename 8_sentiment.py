@@ -118,35 +118,43 @@ if perplexity_score is None:
     print(f"Failed to get Perplexity score after {MAX_RETRIES} attempts")
 
 # Send an API request to the ChatGPT API
-# print("Send API request to the ChatGPT API...")
-# chatgpt_model = "gpt-5"
-# chatgpt_response = requests.post(
-#     "https://api.openai.com/v1/responses",
-#     headers={
-#         "Authorization": f"Bearer {secrets["OPENAI_API_KEY"]}",
-#         "Content-Type": "application/json"
-#     },
-#     json={
-#         "model": chatgpt_model,
-#         "input": PROMPT
-#     },
-#     timeout=30
-# )
-#
-# print("Try to parse API request from the ChatGPT API...")
-# try:
-#     chatgpt_score = int(chatgpt_response.json()["choices"][0]["message"]["content"])  # NEEDS TO BE MODIFIED; NOT TESTED!
-#     print(f"Successfully received ChatGPT score: {chatgpt_score}")
+# !! Pretty expensive, about 0.22$ per request !!
+print("Send API request to the ChatGPT API...")
+chatgpt_model = "gpt-5"
 
-# except Exception as e:
-#     print("ChatGPT score currently not available.")
-#     print("Error was:", repr(e))
+try:
+    chatgpt_response = requests.post(
+        "https://api.openai.com/v1/responses",
+        headers={
+            "Authorization": f"Bearer {secrets["OPENAI_API_KEY"]}",
+            "Content-Type": "application/json"
+        },
+        json={
+            "model": chatgpt_model,
+            "input": PROMPT,
+            "tools": [ { "type": "web_search" } ],  # This and next line required, force to do web search
+            "tool_choice": "required"
+        },
+        timeout=(10, 600)  # connect, read
+    )
+
+    # Check HTTP status
+    try:
+        chatgpt_response.raise_for_status()
+    except requests.HTTPError:
+        print("Error, server said:", chatgpt_response.text)
+
+    # Parse response
+    chatgpt_score = int(chatgpt_response.json()["output"][-1]["content"][0]["text"])
+    print(f"Successfully received ChatGPT score: {chatgpt_score}")
+except:
+    print(f"Failed to get ChatGPT score")
 
 new_row = {
     "DATE": f"{END_DATE}",
     "PERPLEXITY_SCORE": perplexity_score, "PERPLEXITY_MODEL": perplexity_model,
     "GEMINI_SCORE": gemini_score, "GEMINI_MODEL": gemini_model,
-    # "CHATGPT_SCORE": chatgpt_score, "CHATGPT_MODEL": chatgpt_model
+    "CHATGPT_SCORE": chatgpt_score, "CHATGPT_MODEL": chatgpt_model
 }
 df = pd.DataFrame([new_row])
 print(f"Save data to {FILE_PATH}")

@@ -78,3 +78,4 @@ DATE,PERPLEXITY_SCORE,PERPLEXITY_MODEL,GEMINI_SCORE,GEMINI_MODEL,CHATGPT_SCORE,C
 2025-12-04,,sonar-pro,71,gemini-2.5-pro,0,gpt-5
 2025-12-05,73,sonar-pro,63,gemini-2.5-pro,0,gpt-5
 2025-12-06,82,sonar-pro,25,gemini-2.5-pro,0,gpt-5
+2025-12-07,82,sonar-pro,78,gemini-2.5-flash,0,gpt-5

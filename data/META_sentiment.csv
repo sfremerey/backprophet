@@ -96,3 +96,4 @@ DATE,PERPLEXITY_SCORE,PERPLEXITY_MODEL,GEMINI_SCORE,GEMINI_MODEL,CHATGPT_SCORE,C
 2025-12-22,,sonar-pro,82,gemini-2.5-flash,0,gpt-5
 2025-12-23,,sonar-pro,73,gemini-2.5-flash,0,gpt-5
 2025-12-24,,sonar-pro,82,gemini-2.5-flash,0,gpt-5
+2025-12-25,82,sonar-pro,76,gemini-2.5-flash,0,gpt-5
